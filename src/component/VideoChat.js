@@ -1,6 +1,6 @@
 // VideoChat.js
 import React, { useEffect, useRef, useState } from 'react';
-import Peer from 'simple-peer/simplepeer.min.js'; // Use the browser-compatible version
+import Peer from 'simple-peer';
 import { db } from '../firebase';
 import { collection, addDoc, deleteDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
 

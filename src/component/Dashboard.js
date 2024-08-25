@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { auth, db, doc, getDoc, collection, addDoc, onSnapshot } from '../firebase';
+import { auth, db, doc, getDoc} from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import Chat from './Chat'; // Import the new Chat component
 import VideoChat from './VideoChat';

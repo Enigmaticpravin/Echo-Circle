@@ -101,7 +101,6 @@ function Login() {
             <p className="text-sm text-gray-600">
               Don’t have an account?{" "}
               <a
-                href="#"
                 className="text-blue-500 hover:underline transition duration-300"
               >
                 Sign up
