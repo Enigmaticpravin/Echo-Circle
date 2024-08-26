@@ -239,23 +239,20 @@ function CallsComponent() {
 
   return (
     <div className="flex-1 flex flex-col p-4">
-      <div className="flex-1 bg-gray-800 rounded-lg overflow-y-auto p-4 bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
-        <h2 className="text-2xl font-semibold text-white mb-6">Professional Group Video Call</h2>
-
-        <div className="grid grid-cols-3 gap-4">
-          <div className="relative">
-            <video
-              ref={localVideoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-auto rounded-lg shadow-lg scale-x-[-1]"
-              style={{ objectFit: 'cover' }}
-            />
-            <span className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50 text-white px-2 py-1 rounded-md text-sm">
-              You
-            </span>
-          </div>
+      <div className="flex-1 bg-gray-800 rounded-lg overflow-y-auto p-4">
+        <div className="relative mb-4">
+          <video
+            autoPlay
+            playsInline
+            ref={localVideoRef}
+            className="w-full h-auto rounded-lg shadow-lg"
+            style={{ objectFit: 'cover' }}
+          />
+          <span className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50 text-white px-2 py-1 rounded-md text-sm">
+            Me
+          </span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Object.entries(remoteStreams).map(([id, stream]) => (
             <div key={id} className="relative">
               <video
