@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { auth, db, doc, getDoc, collection, getDocs } from '../firebase';
 import { useNavigate } from 'react-router-dom';
-import { addDoc, onSnapshot, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import { addDoc, serverTimestamp } from 'firebase/firestore';
 import Chat from './Chat';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import logo from '../images/logo.png';

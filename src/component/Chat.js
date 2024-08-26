@@ -3,7 +3,6 @@ import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from 
 import { db } from '../firebase';
 
 function Chat({ user }) {
-  const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const messagesEndRef = useRef(null);
 
@@ -23,18 +22,6 @@ function Chat({ user }) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  const handleSendMessage = async () => {
-    if (message.trim()) {
-      await addDoc(collection(db, 'messages'), {
-        text: message,
-        uid: user.userId,
-        displayName: user.name,
-        createdAt: serverTimestamp(),
-      });
-      setMessage('');
-    }
-  };
 
   return (
     <div className="flex">

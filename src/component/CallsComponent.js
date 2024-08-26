@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { db, doc, setDoc, getDoc, collection, getDocs, query, where, onSnapshot, updateDoc, arrayUnion, addDoc } from '../firebase';
+import { db, doc, getDoc, collection, query, where, onSnapshot, updateDoc, arrayUnion, addDoc } from '../firebase';
 import { getAuth } from 'firebase/auth';
 
 function CallsComponent() {
@@ -216,9 +216,38 @@ function CallsComponent() {
     <div className="flex-1 flex flex-col p-4 bg-gray-900">
       <div className="flex-1 bg-gray-800 rounded-lg overflow-y-auto p-4 bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
         <h2 className="text-2xl font-semibold text-white mb-6">Group Video Call</h2>
-        
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="relative">
+            <video
+              ref={localVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-auto rounded-lg shadow-lg"
+            />
+            <span className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 text-white px-2 py-1 rounded-md text-sm">
+              You
+            </span>
+          </div>
+          {remoteStreams.map((stream, index) => (
+            <div key={stream.id} className="relative">
+              <video
+                autoPlay
+                playsInline
+                ref={(video) => {
+                  if (video) video.srcObject = stream;
+                }}
+                className="w-full h-auto rounded-lg shadow-lg"
+              />
+              <span className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 text-white px-2 py-1 rounded-md text-sm">
+                Participant {index + 1}
+              </span>
+            </div>
+          ))}
+        </div>
         {!roomStarted && (
-          <div className="flex space-x-4 mb-6">
+          <div className="flex space-x-4 mb-6 mt-10">
             {!isCreator && (
               <>
                 <input
@@ -250,63 +279,37 @@ function CallsComponent() {
         )}
 
         {roomStarted && (
-          <div className="flex items-center mb-4 space-x-4 mx-auto">
-            <button
-              onClick={handleCopyRoomId}
-              className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50"
-            >
-              Copy Room ID
-            </button>
-            <button
-              onClick={handleDisconnect}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-            >
-              Disconnect
-            </button>
-            <button
-              onClick={toggleCamera}
-              className={`px-4 py-2 ${cameraOn ? 'bg-green-600' : 'bg-gray-600'} text-white rounded-md hover:${cameraOn ? 'bg-green-700' : 'bg-gray-700'} transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50`}
-            >
-              {cameraOn ? 'Camera Off' : 'Camera On'}
-            </button>
-            <button
-              onClick={toggleAudio}
-              className={`px-4 py-2 ${audioOn ? 'bg-blue-600' : 'bg-gray-600'} text-white rounded-md hover:${audioOn ? 'bg-blue-700' : 'bg-gray-700'} transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50`}
-            >
-              {audioOn ? 'Mute Audio' : 'Unmute Audio'}
-            </button>
-          </div>
+         <div className="flex justify-center mb-4 w-full mt-10">
+         <div className="flex items-center space-x-4">
+         <button
+  onClick={handleCopyRoomId}
+  className="px-4 py-2 bg-white bg-opacity-30 backdrop-blur-md border border-gray-300 rounded-lg text-white flex items-center space-x-2 hover:bg-opacity-40 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50"
+>
+  <i className="fas fa-copy"></i> {/* Replace with the relevant icon */}
+  <span>Copy Room ID</span>
+</button>
+           <button
+             onClick={handleDisconnect}
+             className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+           >
+             Disconnect
+           </button>
+           <button
+             onClick={toggleCamera}
+             className={`px-4 py-2 ${cameraOn ? 'bg-green-600' : 'bg-gray-600'} text-white rounded-md hover:${cameraOn ? 'bg-green-700' : 'bg-gray-700'} transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50`}
+           >
+             {cameraOn ? 'Camera Off' : 'Camera On'}
+           </button>
+           <button
+             onClick={toggleAudio}
+             className={`px-4 py-2 ${audioOn ? 'bg-blue-600' : 'bg-gray-600'} text-white rounded-md hover:${audioOn ? 'bg-blue-700' : 'bg-gray-700'} transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50`}
+           >
+             {audioOn ? 'Mute Audio' : 'Unmute Audio'}
+           </button>
+         </div>
+       </div>
+       
         )}
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="relative">
-            <video
-              ref={localVideoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-auto rounded-lg shadow-lg"
-            />
-            <span className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 text-white px-2 py-1 rounded-md text-sm">
-              You
-            </span>
-          </div>
-          {remoteStreams.map((stream, index) => (
-            <div key={stream.id} className="relative">
-              <video
-                autoPlay
-                playsInline
-                ref={(video) => {
-                  if (video) video.srcObject = stream;
-                }}
-                className="w-full h-auto rounded-lg shadow-lg"
-              />
-              <span className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 text-white px-2 py-1 rounded-md text-sm">
-                Participant {index + 1}
-              </span>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );
