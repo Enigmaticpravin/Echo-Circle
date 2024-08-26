@@ -94,57 +94,57 @@ function CallsComponent() {
     });
   };
 
-const createPeerConnection = async (participantId, isInitiator, roomId) => {
-  try {
-    const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' },
-        { urls: 'stun:stun3.l.google.com:19302' },
-        { urls: 'stun:stun4.l.google.com:19302' },
-      ],
-      iceCandidatePoolSize: 10,
-    });
+  const createPeerConnection = async (participantId, isInitiator, roomId) => {
+    try {
+      const pc = new RTCPeerConnection({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
+          { urls: 'stun:stun4.l.google.com:19302' },
+        ],
+        iceCandidatePoolSize: 10,
+      });
 
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        addDoc(collection(db, 'rooms', roomId, 'candidates'), {
-          candidate: event.candidate.toJSON(),
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          addDoc(collection(db, 'rooms', roomId, 'candidates'), {
+            candidate: event.candidate.toJSON(),
+            participantId: auth.currentUser.uid,
+            recipientId: participantId
+          });
+        }
+      };
+
+      pc.ontrack = (event) => {
+        console.log('Received track:', event.track.kind, 'from', participantId);
+        setRemoteStreams(prev => {
+          const updatedStreams = { ...prev };
+          if (!updatedStreams[participantId]) {
+            updatedStreams[participantId] = new MediaStream();
+          }
+          updatedStreams[participantId].addTrack(event.track);
+          return updatedStreams;
+        });
+      };
+
+      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+      if (isInitiator) {
+        const offer = await pc.createOffer({
+          offerToReceiveAudio: true,
+          offerToReceiveVideo: true,
+        });
+        await pc.setLocalDescription(offer);
+        await addDoc(collection(db, 'rooms', roomId, 'offers'), {
+          offer: { type: offer.type, sdp: offer.sdp },
           participantId: auth.currentUser.uid,
           recipientId: participantId
         });
       }
-    };
 
-    pc.ontrack = (event) => {
-      console.log('Received track:', event.track.kind, 'from', participantId);
-      setRemoteStreams(prev => {
-        const updatedStreams = { ...prev };
-        if (!updatedStreams[participantId]) {
-          updatedStreams[participantId] = new MediaStream();
-        }
-        updatedStreams[participantId].addTrack(event.track);
-        return updatedStreams;
-      });
-    };
-
-    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-
-    if (isInitiator) {
-      const offer = await pc.createOffer({
-        offerToReceiveAudio: true,
-        offerToReceiveVideo: true,
-      });
-      await pc.setLocalDescription(offer);
-      await addDoc(collection(db, 'rooms', roomId, 'offers'), {
-        offer: { type: offer.type, sdp: offer.sdp },
-        participantId: auth.currentUser.uid,
-        recipientId: participantId
-      });
-    }
-
-    peerConnections.current[participantId] = pc;
+      peerConnections.current[participantId] = pc;
 
       onSnapshot(
         query(collection(db, 'rooms', roomId, 'offers'), where('recipientId', '==', auth.currentUser.uid)),
@@ -256,86 +256,74 @@ const createPeerConnection = async (participantId, isInitiator, roomId) => {
               You
             </span>
           </div>
-          {Object.entries(remoteStreams).map(([participantId, stream]) => (
-            <div key={participantId} className="relative">
+          {Object.entries(remoteStreams).map(([id, stream]) => (
+            <div key={id} className="relative">
               <video
                 autoPlay
                 playsInline
-                ref={(video) => {
-                  if (video) video.srcObject = stream;
-                }}
-                className="w-full h-auto rounded-lg shadow-lg scale-x-[-1]"
+                ref={(ref) => ref && (ref.srcObject = stream)}
+                className="w-full h-auto rounded-lg shadow-lg"
                 style={{ objectFit: 'cover' }}
               />
-              <span className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 text-white px-2 py-1 rounded-md text-sm">
-                Participant {participantId.slice(0, 4)}
+              <span className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50 text-white px-2 py-1 rounded-md text-sm">
+                {id}
               </span>
             </div>
           ))}
         </div>
-        {!roomStarted && (
-          <div className="flex space-x-4 mb-6 mt-10">
-            {!isCreator && (
-              <>
-                <input
-                  type="text"
-                  value={roomId}
-                  onChange={(e) => setRoomId(e.target.value)}
-                  placeholder="Enter Room ID"
-                  className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-                />
-                <button
-                  onClick={handleJoinRoom}
-                  disabled={!roomId}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Join Room
-                </button>
-              </>
-            )}
-            {!isCreator && (
+
+        <div className="mt-6 flex justify-center space-x-4">
+          {!roomStarted ? (
+            <>
               <button
                 onClick={createRoom}
-                disabled={!isReady}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 shadow-2xl border border-blue-700 border-opacity-50"
               >
-                Create Room
+                Start Room
               </button>
-            )}
-          </div>
-        )}
-
-        {roomStarted && (
-         <div className="flex justify-center mb-4 w-full mt-10">
-           <div className="flex items-center space-x-4">
-             <button
-               onClick={handleCopyRoomId}
-               className="px-4 py-2 bg-white bg-opacity-30 backdrop-blur-md border border-gray-300 rounded-lg text-white flex items-center space-x-2 hover:bg-opacity-40 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50"
-             >
-               <i className="fas fa-copy"></i>
-               <span>Copy Room ID</span>
-             </button>
-             <button
-               onClick={handleDisconnect}
-               className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-             >
-               Disconnect
-             </button>
-             <button
-               onClick={toggleCamera}
-               className={`px-4 py-2 ${cameraOn ? 'bg-green-600' : 'bg-gray-600'} text-white rounded-md hover:${cameraOn ? 'bg-green-700' : 'bg-gray-700'} transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50`}
-             >
-               {cameraOn ? 'Camera Off' : 'Camera On'}
-             </button>
-             <button
-               onClick={toggleAudio}
-               className={`px-4 py-2 ${audioOn ? 'bg-blue-600' : 'bg-gray-600'} text-white rounded-md hover:${audioOn ? 'bg-blue-700' : 'bg-gray-700'} transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50`}
-             >
-               {audioOn ? 'Mute Audio' : 'Unmute Audio'}
-             </button>
-           </div>
-         </div>
-        )}
+              <input
+                type="text"
+                value={roomId}
+                onChange={(e) => setRoomId(e.target.value)}
+                placeholder="Enter Room ID"
+                className="bg-gray-700 text-white px-4 py-2 rounded-lg border border-gray-600 shadow-2xl"
+              />
+              <button
+                onClick={handleJoinRoom}
+                className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 shadow-2xl border border-green-700 border-opacity-50"
+              >
+                Join Room
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={handleCopyRoomId}
+                className="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 shadow-2xl border border-yellow-700 border-opacity-50"
+              >
+                Copy Room ID
+              </button>
+              <button
+                onClick={toggleCamera}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 shadow-2xl border border-indigo-700 border-opacity-50"
+              >
+                {cameraOn ? 'Turn Off Camera' : 'Turn On Camera'}
+              </button>
+              <button
+                onClick={toggleAudio}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 shadow-2xl border border-purple-700 border-opacity-50"
+              >
+                {audioOn ? 'Mute Audio' : 'Unmute Audio'}
+              </button>
+              <button
+                onClick={handleDisconnect}
+                className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 shadow-2xl border border-red-700 border-opacity-50"
+              >
+                Disconnect
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
