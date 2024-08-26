@@ -29,8 +29,8 @@ function CallsComponent() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
           frameRate: { ideal: 30, max: 60 },
         },
         audio: {
@@ -238,43 +238,36 @@ function CallsComponent() {
   };
 
   return (
-    <div className="flex-1 flex flex-col p-4">
+    <div className="flex-1 flex flex-col p-4 bg-gray-900 text-white">
       <div className="flex-1 bg-gray-800 rounded-lg overflow-y-auto p-4">
-        <div className="relative mb-4">
-          <video
-            autoPlay
-            playsInline
-            ref={localVideoRef}
-            className="w-full h-auto rounded-lg shadow-lg"
-            style={{ objectFit: 'cover' }}
-          />
-          <span className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50 text-white px-2 py-1 rounded-md text-sm">
-            Me
-          </span>
-        </div>
+        <video
+          ref={localVideoRef}
+          autoPlay
+          playsInline
+          muted
+          className="w-full h-64 md:h-80 lg:h-96 object-cover rounded-lg mb-4"
+        />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Object.entries(remoteStreams).map(([id, stream]) => (
-            <div key={id} className="relative">
+            <div key={id} className="relative bg-gray-800 rounded-lg overflow-hidden border border-gray-700 shadow-lg">
               <video
                 autoPlay
                 playsInline
                 ref={(ref) => ref && (ref.srcObject = stream)}
-                className="w-full h-auto rounded-lg shadow-lg"
-                style={{ objectFit: 'cover' }}
+                className="w-full h-64 md:h-80 lg:h-96 object-cover"
               />
-              <span className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50 text-white px-2 py-1 rounded-md text-sm">
+              <span className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 backdrop-blur-lg shadow-md border border-gray-700 text-white px-2 py-1 rounded-md text-sm">
                 {id}
               </span>
             </div>
           ))}
         </div>
-
-        <div className="mt-6 flex justify-center space-x-4">
+        <div className="mt-6 flex flex-wrap justify-center gap-4">
           {!roomStarted ? (
             <>
               <button
                 onClick={createRoom}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 shadow-2xl border border-blue-700 border-opacity-50"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 shadow-lg border border-blue-700"
               >
                 Start Room
               </button>
@@ -283,11 +276,11 @@ function CallsComponent() {
                 value={roomId}
                 onChange={(e) => setRoomId(e.target.value)}
                 placeholder="Enter Room ID"
-                className="bg-gray-700 text-white px-4 py-2 rounded-lg border border-gray-600 shadow-2xl"
+                className="bg-gray-700 text-white px-4 py-2 rounded-lg border border-gray-600 shadow-lg"
               />
               <button
                 onClick={handleJoinRoom}
-                className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 shadow-2xl border border-green-700 border-opacity-50"
+                className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 shadow-lg border border-green-700"
               >
                 Join Room
               </button>
@@ -296,25 +289,25 @@ function CallsComponent() {
             <>
               <button
                 onClick={handleCopyRoomId}
-                className="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 shadow-2xl border border-yellow-700 border-opacity-50"
+                className="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 shadow-lg border border-yellow-700"
               >
                 Copy Room ID
               </button>
               <button
                 onClick={toggleCamera}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 shadow-2xl border border-indigo-700 border-opacity-50"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 shadow-lg border border-indigo-700"
               >
                 {cameraOn ? 'Turn Off Camera' : 'Turn On Camera'}
               </button>
               <button
                 onClick={toggleAudio}
-                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 shadow-2xl border border-purple-700 border-opacity-50"
+                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 shadow-lg border border-purple-700"
               >
                 {audioOn ? 'Mute Audio' : 'Unmute Audio'}
               </button>
               <button
                 onClick={handleDisconnect}
-                className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 shadow-2xl border border-red-700 border-opacity-50"
+                className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 shadow-lg border border-red-700"
               >
                 Disconnect
               </button>
