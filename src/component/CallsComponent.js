@@ -106,7 +106,7 @@ function CallsComponent() {
         ],
         iceCandidatePoolSize: 10,
       });
-
+  
       pc.onicecandidate = (event) => {
         if (event.candidate) {
           addDoc(collection(db, 'rooms', roomId, 'candidates'), {
@@ -116,16 +116,21 @@ function CallsComponent() {
           });
         }
       };
-
+  
       pc.ontrack = (event) => {
-        setRemoteStreams(prev => ({
-          ...prev,
-          [participantId]: event.streams[0]
-        }));
+        console.log('Received track:', event.track.kind, 'from', participantId);
+        setRemoteStreams(prev => {
+          const updatedStreams = { ...prev };
+          if (!updatedStreams[participantId]) {
+            updatedStreams[participantId] = new MediaStream();
+          }
+          updatedStreams[participantId].addTrack(event.track);
+          return updatedStreams;
+        });
       };
-
+  
       localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-
+  
       if (isInitiator) {
         const offer = await pc.createOffer({
           offerToReceiveAudio: true,
@@ -138,7 +143,7 @@ function CallsComponent() {
           recipientId: participantId
         });
       }
-
+  
       peerConnections.current[participantId] = pc;
 
       onSnapshot(
