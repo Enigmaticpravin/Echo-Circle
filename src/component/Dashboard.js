@@ -72,7 +72,7 @@ function Dashboard() {
   );  
 
   return (
-    <div className="flex h-screen bg-gray-900 text-white">
+    <div className="flex h-screen bg-gradient-to-r from-gray-900 via-black to-gray-900 text-white">
       {/* Sidebar */}
       <div className="w-64 bg-gray-800 p-4 flex flex-col justify-between mt-4 ml-4 mb-4 rounded-lg bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
         <div>
@@ -160,13 +160,13 @@ function Dashboard() {
           </ul>
         </div>
 
-        <div className="flex-1 flex flex-col p-4 bg-gray-900">
+        <div className="flex-1 flex flex-col p-4">
           <div className="flex-1 bg-gray-800 rounded-lg overflow-y-auto p-4 bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
             {/* Chat Messages */}
             <Chat user={user} />
           </div>
           {/* Sticky Input Area */}
-          <div className="bg-gray-800 p-4 rounded-lg mt-2 flex items-center">
+          <div className="bg-gray-800 p-4 rounded-lg mt-2 flex items-center bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
             <input
               type="text"
               value={message}
