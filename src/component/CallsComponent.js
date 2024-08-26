@@ -1,16 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  db,
-  doc,
-  getDoc,
-  collection,
-  query,
-  where,
-  onSnapshot,
-  updateDoc,
-  arrayUnion,
-  addDoc,
-} from '../firebase';
+import { db, doc, getDoc, collection, query, where, onSnapshot, updateDoc, arrayUnion, addDoc } from '../firebase';
 import { getAuth } from 'firebase/auth';
 
 function CallsComponent() {
@@ -30,9 +19,9 @@ function CallsComponent() {
     setupLocalStream();
     return () => {
       if (localStream) {
-        localStream.getTracks().forEach((track) => track.stop());
+        localStream.getTracks().forEach(track => track.stop());
       }
-      Object.values(peerConnections.current).forEach((pc) => pc.close());
+      Object.values(peerConnections.current).forEach(pc => pc.close());
     };
   }, []);
 
@@ -50,7 +39,7 @@ function CallsComponent() {
           autoGainControl: true,
           sampleRate: 48000,
           sampleSize: 16,
-        },
+        }
       });
       setLocalStream(stream);
       if (localVideoRef.current) {
@@ -58,7 +47,7 @@ function CallsComponent() {
       }
       setIsReady(true);
     } catch (error) {
-      console.error('Error accessing media devices:', error);
+      console.error("Error accessing media devices:", error);
       setIsReady(false);
     }
   };
@@ -86,7 +75,7 @@ function CallsComponent() {
         }
       }
       await updateDoc(roomRef, {
-        participants: arrayUnion(auth.currentUser.uid),
+        participants: arrayUnion(auth.currentUser.uid)
       });
     }
 
@@ -105,87 +94,73 @@ function CallsComponent() {
     });
   };
 
-  const createPeerConnection = async (participantId, isInitiator, roomId) => {
-    try {
-      const pc = new RTCPeerConnection({
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' },
-          { urls: 'stun:stun4.l.google.com:19302' },
-        ],
-        iceCandidatePoolSize: 10,
-      });
+const createPeerConnection = async (participantId, isInitiator, roomId) => {
+  try {
+    const pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
+      ],
+      iceCandidatePoolSize: 10,
+    });
 
-      pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          addDoc(collection(db, 'rooms', roomId, 'candidates'), {
-            candidate: event.candidate.toJSON(),
-            participantId: auth.currentUser.uid,
-            recipientId: participantId,
-          });
-        }
-      };
-
-      pc.ontrack = (event) => {
-        console.log('Received track:', event.track.kind, 'from', participantId);
-        setRemoteStreams((prev) => {
-          const updatedStreams = { ...prev };
-          if (!updatedStreams[participantId]) {
-            updatedStreams[participantId] = new MediaStream();
-          }
-          updatedStreams[participantId].addTrack(event.track);
-          return updatedStreams;
-        });
-      };
-
-      if (localStream) {
-        localStream.getTracks().forEach((track) => {
-          pc.addTrack(track, localStream);
-        });
-      } else {
-        console.error('Local stream is not set');
-      }
-
-      peerConnections.current[participantId] = pc;
-
-      if (isInitiator) {
-        const offer = await pc.createOffer({
-          offerToReceiveAudio: true,
-          offerToReceiveVideo: true,
-        });
-        await pc.setLocalDescription(offer);
-        await addDoc(collection(db, 'rooms', roomId, 'offers'), {
-          offer: { type: offer.type, sdp: offer.sdp },
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        addDoc(collection(db, 'rooms', roomId, 'candidates'), {
+          candidate: event.candidate.toJSON(),
           participantId: auth.currentUser.uid,
-          recipientId: participantId,
+          recipientId: participantId
         });
       }
+    };
+
+    pc.ontrack = (event) => {
+      console.log('Received track:', event.track.kind, 'from', participantId);
+      setRemoteStreams(prev => {
+        const updatedStreams = { ...prev };
+        if (!updatedStreams[participantId]) {
+          updatedStreams[participantId] = new MediaStream();
+        }
+        updatedStreams[participantId].addTrack(event.track);
+        return updatedStreams;
+      });
+    };
+
+    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+    if (isInitiator) {
+      const offer = await pc.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true,
+      });
+      await pc.setLocalDescription(offer);
+      await addDoc(collection(db, 'rooms', roomId, 'offers'), {
+        offer: { type: offer.type, sdp: offer.sdp },
+        participantId: auth.currentUser.uid,
+        recipientId: participantId
+      });
+    }
+
+    peerConnections.current[participantId] = pc;
 
       onSnapshot(
-        query(
-          collection(db, 'rooms', roomId, 'offers'),
-          where('recipientId', '==', auth.currentUser.uid)
-        ),
+        query(collection(db, 'rooms', roomId, 'offers'), where('recipientId', '==', auth.currentUser.uid)),
         async (snapshot) => {
           snapshot.docChanges().forEach(async (change) => {
             if (change.type === 'added') {
               const data = change.doc.data();
               const pc = peerConnections.current[data.participantId];
-              if (pc.signalingState === 'stable') {
-                return; // Avoid setting local description again in stable state
-              }
-              if (pc) {
-                await pc.setRemoteDescription(
-                  new RTCSessionDescription(data.offer)
-                );
+              if (pc && pc.signalingState === 'stable') {
+                await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
                 const answer = await pc.createAnswer();
                 await pc.setLocalDescription(answer);
                 await addDoc(collection(db, 'rooms', roomId, 'answers'), {
                   answer: { type: answer.type, sdp: answer.sdp },
                   participantId: auth.currentUser.uid,
-                  recipientId: data.participantId,
+                  recipientId: data.participantId
                 });
               }
             }
@@ -194,19 +169,14 @@ function CallsComponent() {
       );
 
       onSnapshot(
-        query(
-          collection(db, 'rooms', roomId, 'answers'),
-          where('recipientId', '==', auth.currentUser.uid)
-        ),
-        async (snapshot) => {
+        query(collection(db, 'rooms', roomId, 'answers'), where('recipientId', '==', auth.currentUser.uid)),
+        (snapshot) => {
           snapshot.docChanges().forEach(async (change) => {
             if (change.type === 'added') {
               const data = change.doc.data();
               const pc = peerConnections.current[data.participantId];
               if (pc && pc.signalingState === 'have-local-offer') {
-                await pc.setRemoteDescription(
-                  new RTCSessionDescription(data.answer)
-                );
+                await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
               }
             }
           });
@@ -214,10 +184,7 @@ function CallsComponent() {
       );
 
       onSnapshot(
-        query(
-          collection(db, 'rooms', roomId, 'candidates'),
-          where('recipientId', '==', auth.currentUser.uid)
-        ),
+        query(collection(db, 'rooms', roomId, 'candidates'), where('recipientId', '==', auth.currentUser.uid)),
         (snapshot) => {
           snapshot.docChanges().forEach(async (change) => {
             if (change.type === 'added') {
@@ -231,7 +198,7 @@ function CallsComponent() {
         }
       );
     } catch (error) {
-      console.error('Error creating peer connection:', error);
+      console.error("Error creating peer connection:", error);
     }
   };
 
@@ -239,9 +206,9 @@ function CallsComponent() {
     setRoomStarted(false);
     setIsCreator(false);
     setRoomId('');
-    Object.values(peerConnections.current).forEach((pc) => pc.close());
+    Object.values(peerConnections.current).forEach(pc => pc.close());
     if (localStream) {
-      localStream.getTracks().forEach((track) => track.stop());
+      localStream.getTracks().forEach(track => track.stop());
     }
   };
 
@@ -258,117 +225,116 @@ function CallsComponent() {
 
   const toggleCamera = () => {
     if (localStream) {
-      localStream.getVideoTracks().forEach((track) => (track.enabled = !track.enabled));
+      localStream.getVideoTracks().forEach(track => track.enabled = !track.enabled);
       setCameraOn(!cameraOn);
     }
   };
 
   const toggleAudio = () => {
     if (localStream) {
-      localStream.getAudioTracks().forEach((track) => (track.enabled = !track.enabled));
+      localStream.getAudioTracks().forEach(track => track.enabled = !track.enabled);
       setAudioOn(!audioOn);
     }
   };
 
   return (
-    <div className="h-screen bg-gray-800 p-4">
-      <div className="container mx-auto">
-        <h2 className="text-2xl text-white mb-6">Video Call Interface</h2>
+    <div className="flex-1 flex flex-col p-4">
+      <div className="flex-1 bg-gray-800 rounded-lg overflow-y-auto p-4 bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
+        <h2 className="text-2xl font-semibold text-white mb-6">Professional Group Video Call</h2>
 
-        {!roomStarted && (
-          <div className="mb-6">
-            <input
-              type="text"
-              placeholder="Enter Room ID"
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
-              className="p-2 rounded-md bg-gray-700 text-white mr-4"
+        <div className="grid grid-cols-3 gap-4">
+          <div className="relative">
+            <video
+              ref={localVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-auto rounded-lg shadow-lg scale-x-[-1]"
+              style={{ objectFit: 'cover' }}
             />
-            <button
-              onClick={createRoom}
-              className="bg-blue-600 text-white p-2 rounded-md mr-4"
-            >
-              Create Room
-            </button>
-            <button
-              onClick={handleJoinRoom}
-              className="bg-green-600 text-white p-2 rounded-md"
-            >
-              Join Room
-            </button>
+            <span className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50 text-white px-2 py-1 rounded-md text-sm">
+              You
+            </span>
+          </div>
+          {Object.entries(remoteStreams).map(([participantId, stream]) => (
+            <div key={participantId} className="relative">
+              <video
+                autoPlay
+                playsInline
+                ref={(video) => {
+                  if (video) video.srcObject = stream;
+                }}
+                className="w-full h-auto rounded-lg shadow-lg scale-x-[-1]"
+                style={{ objectFit: 'cover' }}
+              />
+              <span className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 text-white px-2 py-1 rounded-md text-sm">
+                Participant {participantId.slice(0, 4)}
+              </span>
+            </div>
+          ))}
+        </div>
+        {!roomStarted && (
+          <div className="flex space-x-4 mb-6 mt-10">
+            {!isCreator && (
+              <>
+                <input
+                  type="text"
+                  value={roomId}
+                  onChange={(e) => setRoomId(e.target.value)}
+                  placeholder="Enter Room ID"
+                  className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                />
+                <button
+                  onClick={handleJoinRoom}
+                  disabled={!roomId}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Join Room
+                </button>
+              </>
+            )}
+            {!isCreator && (
+              <button
+                onClick={createRoom}
+                disabled={!isReady}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Create Room
+              </button>
+            )}
           </div>
         )}
 
         {roomStarted && (
-          <>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl text-white">Room ID: {roomId}</h3>
-              <button
-                onClick={handleCopyRoomId}
-                className="bg-yellow-500 text-black p-2 rounded-md"
-              >
-                Copy Room ID
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="bg-black rounded-lg overflow-hidden shadow-lg relative">
-                <video
-                  ref={localVideoRef}
-                  autoPlay
-                  muted
-                  className="w-full h-full object-cover"
-                ></video>
-                <div className="absolute bottom-2 left-2 text-white text-sm">
-                  You
-                </div>
-              </div>
-              {Object.keys(remoteStreams).map((participantId) => (
-                <div
-                  key={participantId}
-                  className="bg-black rounded-lg overflow-hidden shadow-lg relative"
-                >
-                  <video
-                    ref={(ref) => {
-                      if (ref) {
-                        ref.srcObject = remoteStreams[participantId];
-                      }
-                    }}
-                    autoPlay
-                    className="w-full h-full object-cover"
-                  ></video>
-                  <div className="absolute bottom-2 left-2 text-white text-sm">
-                    Participant: {participantId}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-center space-x-4">
-              <button
-                onClick={toggleCamera}
-                className={`p-2 rounded-full ${
-                  cameraOn ? 'bg-green-600' : 'bg-red-600'
-                }`}
-              >
-                {cameraOn ? 'Camera On' : 'Camera Off'}
-              </button>
-              <button
-                onClick={toggleAudio}
-                className={`p-2 rounded-full ${
-                  audioOn ? 'bg-green-600' : 'bg-red-600'
-                }`}
-              >
-                {audioOn ? 'Audio On' : 'Audio Off'}
-              </button>
-              <button
-                onClick={handleDisconnect}
-                className="bg-red-600 text-white p-2 rounded-md"
-              >
-                Disconnect
-              </button>
-            </div>
-          </>
+         <div className="flex justify-center mb-4 w-full mt-10">
+           <div className="flex items-center space-x-4">
+             <button
+               onClick={handleCopyRoomId}
+               className="px-4 py-2 bg-white bg-opacity-30 backdrop-blur-md border border-gray-300 rounded-lg text-white flex items-center space-x-2 hover:bg-opacity-40 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50"
+             >
+               <i className="fas fa-copy"></i>
+               <span>Copy Room ID</span>
+             </button>
+             <button
+               onClick={handleDisconnect}
+               className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+             >
+               Disconnect
+             </button>
+             <button
+               onClick={toggleCamera}
+               className={`px-4 py-2 ${cameraOn ? 'bg-green-600' : 'bg-gray-600'} text-white rounded-md hover:${cameraOn ? 'bg-green-700' : 'bg-gray-700'} transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50`}
+             >
+               {cameraOn ? 'Camera Off' : 'Camera On'}
+             </button>
+             <button
+               onClick={toggleAudio}
+               className={`px-4 py-2 ${audioOn ? 'bg-blue-600' : 'bg-gray-600'} text-white rounded-md hover:${audioOn ? 'bg-blue-700' : 'bg-gray-700'} transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50`}
+             >
+               {audioOn ? 'Mute Audio' : 'Unmute Audio'}
+             </button>
+           </div>
+         </div>
         )}
       </div>
     </div>
