@@ -213,7 +213,7 @@ function CallsComponent() {
   };
 
   return (
-    <div className="flex-1 flex flex-col p-4 bg-gray-900">
+    <div className="flex-1 flex flex-col p-4">
       <div className="flex-1 bg-gray-800 rounded-lg overflow-y-auto p-4 bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
         <h2 className="text-2xl font-semibold text-white mb-6">Group Video Call</h2>
 
@@ -224,9 +224,9 @@ function CallsComponent() {
               autoPlay
               playsInline
               muted
-              className="w-full h-auto rounded-lg shadow-lg"
+              className="w-full h-auto rounded-lg shadow-lg scale-x-[-1]"
             />
-            <span className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 text-white px-2 py-1 rounded-md text-sm">
+            <span className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50 text-white px-2 py-1 rounded-md text-sm">
               You
             </span>
           </div>
@@ -238,7 +238,7 @@ function CallsComponent() {
                 ref={(video) => {
                   if (video) video.srcObject = stream;
                 }}
-                className="w-full h-auto rounded-lg shadow-lg"
+                className="w-full h-auto rounded-lg shadow-lg scale-x-[-1]"
               />
               <span className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 text-white px-2 py-1 rounded-md text-sm">
                 Participant {index + 1}
@@ -290,7 +290,7 @@ function CallsComponent() {
 </button>
            <button
              onClick={handleDisconnect}
-             className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+             className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
            >
              Disconnect
            </button>
