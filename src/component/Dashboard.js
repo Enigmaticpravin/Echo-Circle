@@ -1,14 +1,37 @@
 import React, { useEffect, useState } from 'react';
-import { auth, db, doc, getDoc} from '../firebase';
+import { auth, db, doc, getDoc, collection, getDocs } from '../firebase';
 import { useNavigate } from 'react-router-dom';
-import Chat from './Chat'; // Import the new Chat component
-import VideoChat from './VideoChat';
+import { addDoc, onSnapshot, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import Chat from './Chat';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import logo from '../images/logo.png';
+import ExploreComponent from './ExploreComponent';
+import CallsComponent from './CallsComponent';
+import ContactComponent from './ContactComponent';
+import PrivacyComponent from './PrivacyComponent';
+import SettingComponent from './SettingComponent';
+import { faCompass, faCommentDots, faPhoneAlt, faAddressBook, faUserShield, faCog } from '@fortawesome/free-solid-svg-icons';
 
 function Dashboard() {
   const [user, setUser] = useState(null);
-  const [showChat, setShowChat] = useState(false); // State to toggle between profile and chat view
-  const [showVideoChat, setShowVideoChat] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
+  const [activeTab, setActiveTab] = useState('Chats');
+  const [message, setMessage] = useState('');
   const navigate = useNavigate();
+
+  const fetchAllUsers = async () => {
+    try {
+      const usersCollection = collection(db, 'users');
+      const usersSnapshot = await getDocs(usersCollection);
+      const usersList = usersSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setAllUsers(usersList);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
@@ -18,6 +41,7 @@ function Dashboard() {
         if (userSnap.exists()) {
           setUser({ ...userSnap.data(), uid: currentUser.uid });
         }
+        fetchAllUsers();
       } else {
         navigate('/');
       }
@@ -26,118 +50,146 @@ function Dashboard() {
     return () => unsubscribe();
   }, [navigate]);
 
-  const handleSignOut = () => {
-    auth.signOut();
-    navigate('/');
+  const handleSendMessage = async () => {
+    if (message.trim()) {
+      await addDoc(collection(db, 'messages'), {
+        text: message,
+        uid: user.userId,
+        displayName: user.name,
+        createdAt: serverTimestamp(),
+      });
+      setMessage('');
+    }
   };
 
-  if (!user) return <div>Loading...</div>;
+  if (!user) return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-900">
+      <div className="relative w-16 h-16 animate-spin">
+        <div className="absolute border-t-4 border-blue-500 border-solid rounded-full inset-0"></div>
+        <div className="absolute border-t-4 border-transparent border-solid rounded-full inset-0 border-l-4 border-blue-500"></div>
+      </div>
+    </div>
+  );  
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-900 text-white">
       {/* Sidebar */}
-      <div className="w-64 bg-white shadow-lg">
-        <div className="p-6">
-          <h2 className="text-3xl font-semibold text-blue-700">Dashboard</h2>
+      <div className="w-64 bg-gray-800 p-4 flex flex-col justify-between mt-4 ml-4 mb-4 rounded-lg bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
+        <div>
+          <img src={logo} className='w-[120px] justify-center items-center mx-auto mb-6'></img>
+          <div className="h-[2px] w-full rounded-lg animated-gradient mb-6 mt-3"></div>
+          <nav>
+          <ul className="space-y-4 p-2">
+  <li
+    className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Explore' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
+    onClick={() => setActiveTab('Explore')}
+  >
+    <FontAwesomeIcon icon={faCompass} className="text-xl mr-2" /> Explore
+  </li>
+  <li
+    className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Chats' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
+    onClick={() => setActiveTab('Chats')}
+  >
+    <FontAwesomeIcon icon={faCommentDots} className="text-xl mr-2" /> Chats
+  </li>
+  <li
+    className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Calls' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
+    onClick={() => setActiveTab('Calls')}
+  >
+    <FontAwesomeIcon icon={faPhoneAlt} className="text-xl mr-2" /> Calls
+  </li>
+  <li
+    className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Contact' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
+    onClick={() => setActiveTab('Contact')}
+  >
+    <FontAwesomeIcon icon={faAddressBook} className="text-xl mr-2" /> Contact
+  </li>
+  <li
+    className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Privacy' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
+    onClick={() => setActiveTab('Privacy')}
+  >
+    <FontAwesomeIcon icon={faUserShield} className="text-xl mr-2" /> Privacy
+  </li>
+  <li
+    className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Setting' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
+    onClick={() => setActiveTab('Setting')}
+  >
+    <FontAwesomeIcon icon={faCog} className="text-xl mr-2" /> Setting
+  </li>
+</ul>
+
+          </nav>
         </div>
-        <nav className="mt-8">
-          <button onClick={() => setShowChat(false)} className="flex items-center p-3 text-gray-700 hover:bg-gray-200 w-full text-left">
-            <span className="ml-4">Home</span>
-          </button>
-          <button onClick={() => setShowChat(false)} className="flex items-center p-3 text-gray-700 hover:bg-gray-200 w-full text-left">
-            <span className="ml-4">Profile</span>
-          </button>
-          <button onClick={() => setShowChat(false)} className="flex items-center p-3 text-gray-700 hover:bg-gray-200 w-full text-left">
-            <span className="ml-4">Settings</span>
-          </button>
-          <button onClick={() => { setShowChat(true); setShowVideoChat(false); }} className="flex items-center p-3 text-gray-700 hover:bg-gray-200 w-full text-left">
-            <span className="ml-4">Messages</span>
-          </button>
-          <button onClick={() => { setShowVideoChat(true); setShowChat(false); }} className="flex items-center p-3 text-gray-700 hover:bg-gray-200 w-full text-left">
-            <span className="ml-4">Video Chat</span>
-          </button>
-        </nav>
+        <div className="flex items-center space-x-2 mx-auto mb-4 pt-2 pb-2 pr-4 pl-4 bg-slate-700 rounded-lg bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
+          <img src={user.profileImage} alt={user.name} className="w-8 h-8 rounded-full mr-2" />
+          <span>{user.name}</span>
+        </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Top Bar */}
-        <div className="p-8 pb-0">
-          <div className="flex justify-between items-center mb-8">
-            <div className="relative w-1/2">
-              <input 
-                type="text" 
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:border-blue-500"
-                placeholder="Search for friends, groups, pages"
-              />
-              <svg className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M10,17A7,7,0,1,0,3,10,7,7,0,0,0,10,17Zm0-2A5,5,0,1,1,15,10,5,5,0,0,1,10,15Zm10.707.707L18.414,14.414A1,1,0,0,1,19.828,13l2.293,2.293a1,1,0,0,1-1.414,1.414Z" />
-              </svg>
-            </div>
-            <div className="flex items-center">
-              <button className="mr-4">
-                <svg className="w-6 h-6 text-gray-700" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12,21A9,9,0,1,0,3,12,9,9,0,0,0,12,21ZM12,2A10,10,0,1,1,2,12,10,10,0,0,1,12,2Zm1,10H11v5H13Zm0-6H11v4h2Z" />
-                </svg>
-              </button>
-              <button 
-            className="relative mr-4"
-          >
-            <svg className="w-6 h-6 text-gray-700" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12,21a2.5,2.5,0,0,0,2.5-2.5H9.5A2.5,2.5,0,0,0,12,21Zm6.707-3.293L17,16.414V10A5.979,5.979,0,0,0,12,4V3a1,1,0,0,0-2,0V4A5.979,5.979,0,0,0,7,10v6.414L5.293,17.707A1,1,0,0,0,6.707,19H17.293A1,1,0,0,0,18.707,17.707ZM12,20a1.5,1.5,0,0,1-1.5-1.5h3A1.5,1.5,0,0,1,12,20Z" />
-            </svg>
-            {/* Notification Badge (if needed) */}
-            <span className="absolute top-0 right-0 flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-            </span>
-          </button>
-              {user.profileImage && (
-                <img 
-                  src={user.profileImage} 
-                  alt="Profile" 
-                  className="w-10 h-10 rounded-full"
-                />
-              )}
-            </div>
+  {/* Top Bar */}
+  <div className="bg-gray-800 p-4 flex justify-between items-center mt-4 mr-4 ml-4 rounded-xl bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
+    <h2 className="text-xl font-semibold">{activeTab}</h2>
+    <div className="flex items-center space-x-4">
+      {activeTab === 'Chats' && <button className="bg-blue-500 text-white rounded-full px-4 py-2">+ New Chat</button>}
+      <img src={user.profileImage} alt="Profile" className="w-8 h-8 rounded-full" />
+    </div>
+  </div>
+
+  <div className="flex-1 flex overflow-hidden">
+    {activeTab === 'Explore' && <ExploreComponent />}
+    {activeTab === 'Chats' && (
+      <div className="flex-1 flex">
+        <div className="w-1/4 bg-gray-800 p-4 mt-4 ml-4 mb-4 rounded-lg bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
+          {/* Inbox */}
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg">Inbox</h3>
+            <span className="bg-red-500 text-xs text-white rounded-full px-2 py-1">3 New</span>
           </div>
+          <ul>
+            {allUsers.map((user) => (
+              <li key={user.id} className="flex items-center space-x-2 p-2 rounded-xl hover:bg-gray-900 cursor-pointer m-2">
+                <img src={user.profileImage} alt={user.name} className="w-10 h-10 rounded-full" />
+                <div>
+                  <p className="text-sm font-semibold">{user.name}</p>
+                  <p className="text-xs text-gray-400">Last message snippet...</p>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
 
-        {/* Conditional Rendering: Profile or Chat */}
-        <main className="flex-1 overflow-hidden">
-          {showChat ? (
+        <div className="flex-1 flex flex-col p-4 bg-gray-900">
+          <div className="flex-1 bg-gray-800 rounded-lg overflow-y-auto p-4 bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
+            {/* Chat Messages */}
             <Chat user={user} />
-          ) : showVideoChat ? (
-            <VideoChat user={user} />
-          ) : (
-            <div className="p-8">
-              <div className="bg-white p-6 rounded-lg shadow-lg">
-                <div className="flex items-center">
-                  {user.profileImage && (
-                    <img 
-                      src={user.profileImage} 
-                      alt="Profile" 
-                      className="w-20 h-20 rounded-full mr-4"
-                    />
-                  )}
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Welcome, {user.name}!</h1>
-                    <p className="text-gray-600">Email: {user.email}</p>
-                    <p className="text-gray-600">User ID: {user.userId}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={handleSignOut}
-                  className="mt-6 px-4 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition duration-300"
-                >
-                  Sign Out
-                </button>
-              </div>
-            </div>
-          )}
-        </main>
+          </div>
+          {/* Sticky Input Area */}
+          <div className="bg-gray-800 p-4 rounded-lg mt-2 flex items-center">
+            <input
+              type="text"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="flex-grow bg-gray-700 p-2 rounded-lg focus:outline-none mr-2"
+              placeholder="Type your message..."
+            />
+            <button
+              onClick={handleSendMessage}
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+              Send
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
+    )}
+    {activeTab === 'Calls' && <CallsComponent />}
+    {activeTab === 'Contact' && <ContactComponent />}
+    {activeTab === 'Privacy' && <PrivacyComponent />}
+    {activeTab === 'Setting' && <SettingComponent />}
+  </div>
+</div>
+</div>
   );
 }
 

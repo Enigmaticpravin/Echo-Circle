@@ -41,38 +41,19 @@ function Chat({ user }) {
       {/* Chat Area */}
       <div className="flex flex-col flex-1">
         {/* Scrollable Chat Messages */}
-        <div className="flex-1 overflow-y-auto p-4 bg-gray-100" style={{ maxHeight: 'calc(100vh - 80px)' }}>
+        <div className="flex-1 p-4" style={{ maxHeight: 'calc(100vh - 80px)' }}>
           {messages.map((msg) => (
             <div 
               key={msg.id} 
               className={`flex ${msg.uid === user.userId ? 'justify-end' : 'justify-start'} mb-4`}
             >
-              <div className={`p-4 rounded-lg ${msg.uid === user.userId ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}>
+              <div className={` pb-2 pt-2 pl-4 pr-4 rounded-xl mb-2 ${msg.uid === user.userId ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}>
                 <p className="font-bold">{msg.displayName}</p>
                 <p>{msg.text}</p>
               </div>
             </div>
           ))}
           <div ref={messagesEndRef} />
-        </div>
-
-        {/* Sticky Input Box */}
-        <div className="p-4 bg-white shadow-lg sticky">
-          <div className="flex">
-            <input 
-              type="text" 
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
-              placeholder="Type your message..."
-            />
-            <button
-              onClick={handleSendMessage}
-              className="ml-4 px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
-            >
-              Send
-            </button>
-          </div>
         </div>
       </div>
     </div>
