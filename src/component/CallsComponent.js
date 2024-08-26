@@ -7,6 +7,10 @@ function CallsComponent() {
   const [localStream, setLocalStream] = useState(null);
   const [remoteStreams, setRemoteStreams] = useState([]);
   const [isReady, setIsReady] = useState(false);
+  const [cameraOn, setCameraOn] = useState(true);
+  const [audioOn, setAudioOn] = useState(true);
+  const [roomStarted, setRoomStarted] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
   const localVideoRef = useRef(null);
   const peerConnections = useRef({});
   const auth = getAuth();
@@ -38,6 +42,8 @@ function CallsComponent() {
   const createRoom = async () => {
     const roomRef = await addDoc(collection(db, 'rooms'), { participants: [] });
     setRoomId(roomRef.id);
+    setRoomStarted(true);
+    setIsCreator(true);
     await joinRoom(roomRef.id);
   };
 
@@ -170,36 +176,107 @@ function CallsComponent() {
     }
   };
 
+  const handleDisconnect = () => {
+    // Clean up and exit the room
+    setRoomStarted(false);
+    setIsCreator(false);
+    setRoomId('');
+    Object.values(peerConnections.current).forEach(pc => pc.close());
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+    }
+  };
+
+  const handleCopyRoomId = () => {
+    navigator.clipboard.writeText(roomId);
+  };
+
+  const handleJoinRoom = async () => {
+    if (roomId) {
+      await joinRoom(roomId);
+      setRoomStarted(true);
+    }
+  };
+
+  const toggleCamera = () => {
+    if (localStream) {
+      localStream.getVideoTracks().forEach(track => track.enabled = !track.enabled);
+      setCameraOn(!cameraOn);
+    }
+  };
+
+  const toggleAudio = () => {
+    if (localStream) {
+      localStream.getAudioTracks().forEach(track => track.enabled = !track.enabled);
+      setAudioOn(!audioOn);
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col p-4 bg-gray-900">
       <div className="flex-1 bg-gray-800 rounded-lg overflow-y-auto p-4 bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
         <h2 className="text-2xl font-semibold text-white mb-6">Group Video Call</h2>
         
-        <div className="flex space-x-4 mb-6">
-          <button
-            onClick={createRoom}
-            disabled={!isReady}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Create Room
-          </button>
-          <div className="flex-1 flex">
-            <input
-              type="text"
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
-              placeholder="Enter Room ID"
-              className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-            />
+        {!roomStarted && (
+          <div className="flex space-x-4 mb-6">
+            {!isCreator && (
+              <>
+                <input
+                  type="text"
+                  value={roomId}
+                  onChange={(e) => setRoomId(e.target.value)}
+                  placeholder="Enter Room ID"
+                  className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                />
+                <button
+                  onClick={handleJoinRoom}
+                  disabled={!roomId}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Join Room
+                </button>
+              </>
+            )}
+            {!isCreator && (
+              <button
+                onClick={createRoom}
+                disabled={!isReady}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Create Room
+              </button>
+            )}
+          </div>
+        )}
+
+        {roomStarted && (
+          <div className="flex items-center mb-4 space-x-4 mx-auto">
             <button
-              onClick={() => joinRoom(roomId)}
-              disabled={!isReady || !roomId}
-              className="px-4 py-2 bg-green-600 text-white rounded-r-md hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleCopyRoomId}
+              className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50"
             >
-              Join Room
+              Copy Room ID
+            </button>
+            <button
+              onClick={handleDisconnect}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+            >
+              Disconnect
+            </button>
+            <button
+              onClick={toggleCamera}
+              className={`px-4 py-2 ${cameraOn ? 'bg-green-600' : 'bg-gray-600'} text-white rounded-md hover:${cameraOn ? 'bg-green-700' : 'bg-gray-700'} transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50`}
+            >
+              {cameraOn ? 'Camera Off' : 'Camera On'}
+            </button>
+            <button
+              onClick={toggleAudio}
+              className={`px-4 py-2 ${audioOn ? 'bg-blue-600' : 'bg-gray-600'} text-white rounded-md hover:${audioOn ? 'bg-blue-700' : 'bg-gray-700'} transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50`}
+            >
+              {audioOn ? 'Mute Audio' : 'Unmute Audio'}
             </button>
           </div>
-        </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <div className="relative">
