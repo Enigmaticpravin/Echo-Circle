@@ -5,7 +5,7 @@ import { getAuth } from 'firebase/auth';
 function CallsComponent() {
   const [roomId, setRoomId] = useState('');
   const [localStream, setLocalStream] = useState(null);
-  const [remoteStreams, setRemoteStreams] = useState([]);
+  const [remoteStreams, setRemoteStreams] = useState({});
   const [isReady, setIsReady] = useState(false);
   const [cameraOn, setCameraOn] = useState(true);
   const [audioOn, setAudioOn] = useState(true);
@@ -118,12 +118,10 @@ function CallsComponent() {
       };
 
       pc.ontrack = (event) => {
-        setRemoteStreams(prev => {
-          if (!prev.find(stream => stream.id === event.streams[0].id)) {
-            return [...prev, event.streams[0]];
-          }
-          return prev;
-        });
+        setRemoteStreams(prev => ({
+          ...prev,
+          [participantId]: event.streams[0]
+        }));
       };
 
       localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
@@ -239,7 +237,7 @@ function CallsComponent() {
       <div className="flex-1 bg-gray-800 rounded-lg overflow-y-auto p-4 bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
         <h2 className="text-2xl font-semibold text-white mb-6">Professional Group Video Call</h2>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div className="relative">
             <video
               ref={localVideoRef}
@@ -253,8 +251,8 @@ function CallsComponent() {
               You
             </span>
           </div>
-          {remoteStreams.map((stream, index) => (
-            <div key={stream.id} className="relative">
+          {Object.entries(remoteStreams).map(([participantId, stream]) => (
+            <div key={participantId} className="relative">
               <video
                 autoPlay
                 playsInline
@@ -265,7 +263,7 @@ function CallsComponent() {
                 style={{ objectFit: 'cover' }}
               />
               <span className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 text-white px-2 py-1 rounded-md text-sm">
-                Participant {index + 1}
+                Participant {participantId.slice(0, 4)}
               </span>
             </div>
           ))}
