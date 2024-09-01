@@ -7,14 +7,21 @@ import {
     getDoc, 
     collection, 
     getDocs, 
+    serverTimestamp,
+    writeBatch,
+    limit,
+    startAfter,
     query, 
     where, 
     onSnapshot, 
     updateDoc, 
-    arrayUnion, 
-    addDoc 
+    deleteDoc,
+    arrayUnion,
+    arrayRemove,
+    addDoc, 
+    orderBy // Add orderBy here
 } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage"; 
+import { getStorage, ref, uploadBytes, getDownloadURL, uploadString, uploadBytesResumable } from "firebase/storage"; 
 
 const firebaseConfig = {
     apiKey: "AIzaSyBRYu-6GLpgq-sTybxZzdh27U7dyovPj1g",
@@ -44,9 +51,18 @@ export {
     where, 
     onSnapshot, 
     updateDoc, 
+    writeBatch,
     arrayUnion, 
+    startAfter,
+    arrayRemove,
     addDoc, 
     ref, 
     uploadBytes, 
-    getDownloadURL 
+    uploadString,
+    deleteDoc,
+    uploadBytesResumable,
+    getDownloadURL,
+    limit,
+    serverTimestamp,
+    orderBy // Export orderBy here
 };

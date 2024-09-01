@@ -3,6 +3,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/* index.css or App.css */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+
 @keyframes gradientAnimation {
     0% {
       background-position: 0% 50%;
@@ -20,4 +24,113 @@
     background-size: 800% 800%;
     animation: gradientAnimation 8s ease infinite;
   }
+
+  .filter-white {
+    filter: invert(1) brightness(2);
+  }
+/* Add this to your CSS file or style block */
+.content-editable a {
+  color: blue;
+  text-decoration: underline;
+}
+
+.content-editable a:hover {
+  text-decoration: none;
+}
+
+/* Add this to your CSS file or Tailwind configuration */
+.post-container {
+  transition: max-height 0.3s ease; /* Smooth transition for height */
+  overflow: hidden;
+  cursor: pointer; /* Pointer cursor for collapsed posts */
+}
+
+.post-container-expanded {
+  cursor: default; /* Default cursor for expanded posts */
+}
+
+.post-content {
+  display: -webkit-box;
+  -webkit-line-clamp: 10; /* Show up to 10 lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: max-height 0.3s ease; /* Smooth transition for height */
+}
+
+@keyframes foldOut {
+  0% {
+    transform: perspective(1000px) rotateX(-90deg);
+    opacity: 0;
+  }
+  100% {
+    transform: perspective(1000px) rotateX(0deg);
+    opacity: 1;
+  }
+}
+
+.animate-fold {
+  animation: foldOut 0.3s ease-out forwards;
+  transform-origin: top center;
+}
+
+.post-content.expanded {
+  -webkit-line-clamp: unset; /* Show all lines */
+}
+
+
+@keyframes bubble {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+}
+
+/* Add this custom CSS to your stylesheet */
+.transition-smooth {
+  transition: all 0.3s ease-in-out;
+}
+
+.fade-enter {
+  opacity: 0;
+}
+.fade-enter-active {
+  opacity: 1;
+  transition: opacity 500ms;
+}
+.fade-exit {
+  opacity: 1;
+}
+.fade-exit-active {
+  opacity: 0;
+  transition: opacity 500ms;
+}
+
+
+.animate-bubble {
+  animation: bubble 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
   

@@ -1,22 +1,33 @@
 import React, { useEffect, useState } from 'react';
-import { auth, db, doc, getDoc, collection, getDocs } from '../firebase';
+import { auth, db, doc, getDoc, collection, getDocs, query, where } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { addDoc, serverTimestamp } from 'firebase/firestore';
 import Chat from './Chat';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import logo from '../images/logo.png';
 import ExploreComponent from './ExploreComponent';
 import CallsComponent from './CallsComponent';
 import ContactComponent from './ContactComponent';
 import PrivacyComponent from './PrivacyComponent';
+import home from '../images/home-1.svg';
+import messages from "../images/messages-1.svg";
+import video from '../images/video.svg';
+import NotificationsComponent from './NotificationsComponent';
+import money from "../images/money-recive.svg";
+import shield from '../images/shield.svg';
+import setting from '../images/setting.svg';
 import SettingComponent from './SettingComponent';
-import { faCompass, faCommentDots, faPhoneAlt, faAddressBook, faUserShield, faCog } from '@fortawesome/free-solid-svg-icons';
+import QuoraPostPopup from './QuoraPostPopup';
+import search from '../images/search-normal.svg';
+import add from '../images/additem.svg';
+import notification from '../images/notification-1.svg';
 
 function Dashboard() {
   const [user, setUser] = useState(null);
   const [allUsers, setAllUsers] = useState([]);
   const [activeTab, setActiveTab] = useState('Chats');
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [message, setMessage] = useState('');
+  const [showQuoraPopup, setShowQuoraPopup] = useState(false);
   const navigate = useNavigate();
 
   const fetchAllUsers = async () => {
@@ -33,6 +44,17 @@ function Dashboard() {
     }
   };
 
+  const fetchUnreadNotifications = async (currentUser) => {
+    try {
+      const notificationsRef = collection(db, 'notifications', currentUser.uid, 'userNotifications');
+      const q = query(notificationsRef, where('read', '==', false), where('receiverId', '==', currentUser.uid));
+      const snapshot = await getDocs(q);
+      setUnreadNotifications(snapshot.size);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
       if (currentUser) {
@@ -42,6 +64,7 @@ function Dashboard() {
           setUser({ ...userSnap.data(), uid: currentUser.uid });
         }
         fetchAllUsers();
+        fetchUnreadNotifications(currentUser);
       } else {
         navigate('/');
       }
@@ -62,6 +85,10 @@ function Dashboard() {
     }
   };
 
+  const toggleQuoraPopup = () => {
+    setShowQuoraPopup(!showQuoraPopup);
+  };
+
   if (!user) return (
     <div className="flex items-center justify-center min-h-screen bg-gray-900">
       <div className="relative w-16 h-16 animate-spin">
@@ -73,51 +100,52 @@ function Dashboard() {
 
   return (
     <div className="flex h-screen bg-gradient-to-r from-gray-900 via-black to-gray-900 text-white">
+       {/* Popup Modal */}
+       {showQuoraPopup && <QuoraPostPopup onClose={toggleQuoraPopup} />}
       {/* Sidebar */}
       <div className="w-64 bg-gray-800 p-4 flex flex-col justify-between mt-4 ml-4 mb-4 rounded-lg bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
         <div>
-          <img src={logo} className='w-[120px] justify-center items-center mx-auto mb-6'></img>
-          <div className="h-[2px] w-full rounded-lg animated-gradient mb-6 mt-3"></div>
+          <img src={logo} className='w-[200px] justify-center items-center mx-auto mt-[-50px] mb-[-30px]'></img>
+          <div className="h-[2px] w-full rounded-lg animated-gradient mb-6"></div>
           <nav>
-          <ul className="space-y-4 p-2">
-  <li
-    className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Explore' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
-    onClick={() => setActiveTab('Explore')}
-  >
-    <FontAwesomeIcon icon={faCompass} className="text-xl mr-2" /> Explore
-  </li>
-  <li
-    className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Chats' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
-    onClick={() => setActiveTab('Chats')}
-  >
-    <FontAwesomeIcon icon={faCommentDots} className="text-xl mr-2" /> Chats
-  </li>
-  <li
-    className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Calls' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
-    onClick={() => setActiveTab('Calls')}
-  >
-    <FontAwesomeIcon icon={faPhoneAlt} className="text-xl mr-2" /> Calls
-  </li>
-  <li
-    className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Contact' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
-    onClick={() => setActiveTab('Contact')}
-  >
-    <FontAwesomeIcon icon={faAddressBook} className="text-xl mr-2" /> Contact
-  </li>
-  <li
-    className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Privacy' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
-    onClick={() => setActiveTab('Privacy')}
-  >
-    <FontAwesomeIcon icon={faUserShield} className="text-xl mr-2" /> Privacy
-  </li>
-  <li
-    className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Setting' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
-    onClick={() => setActiveTab('Setting')}
-  >
-    <FontAwesomeIcon icon={faCog} className="text-xl mr-2" /> Setting
-  </li>
-</ul>
-
+            <ul className="space-y-4 p-2">
+              <li
+                className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Explore' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
+                onClick={() => setActiveTab('Explore')}
+              >
+                <img src={home} className="text-xl mr-2 filter-white" /> Explore
+              </li>
+              <li
+                className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Chats' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
+                onClick={() => setActiveTab('Chats')}
+              >
+                <img src={messages} className="text-xl mr-2 filter-white" /> Chats
+              </li>
+              <li
+                className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Calls' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
+                onClick={() => setActiveTab('Calls')}
+              >
+                <img src={video} className="text-xl mr-2 filter-white" /> Calls
+              </li>
+              <li
+                className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Contact' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
+                onClick={() => setActiveTab('Contact')}
+              >
+                <img src={money} className="text-xl mr-2 filter-white" /> Monetization
+              </li>
+              <li
+                className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Privacy' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
+                onClick={() => setActiveTab('Privacy')}
+              >
+                <img src={shield} className="text-xl mr-2 filter-white" /> Privacy
+              </li>
+              <li
+                className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Setting' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
+                onClick={() => setActiveTab('Setting')}
+              >
+                <img src={setting} className="text-xl mr-2 filter-white" /> Setting
+              </li>
+            </ul>
           </nav>
         </div>
         <div className="flex items-center space-x-2 mx-auto mb-4 pt-2 pb-2 pr-4 pl-4 bg-slate-700 rounded-lg bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
@@ -131,9 +159,39 @@ function Dashboard() {
   {/* Top Bar */}
   <div className="bg-gray-800 p-4 flex justify-between items-center mt-4 mr-4 ml-4 rounded-xl bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
     <h2 className="text-xl font-semibold">{activeTab}</h2>
-    <div className="flex items-center space-x-4">
-      {activeTab === 'Chats' && <button className="bg-blue-500 text-white rounded-full px-4 py-2">+ New Chat</button>}
-      <img src={user.profileImage} alt="Profile" className="w-8 h-8 rounded-full" />
+    <div className="flex items-center space-x-2 w-4/5 ml-5 mr-5 bg-gray-700 p-2 rounded-full shadow-lg">
+      <img
+        src={search}  // Replace with your image path
+        alt="Search Icon"
+        className="w-5 h-5 text-gray-300 filter-white ml-2"
+      />
+      <textarea
+        className="bg-transparent text-gray-300 placeholder-gray-400 outline-none resize-none w-full"
+        placeholder="Search anything"
+        rows="1"
+      />
+    </div>
+    <div className="flex items-center space-x-4 w-fit">
+      {activeTab === 'Chats' && 
+      <div className="ml-auto self-center rounded-lg cursor-pointer bg-blue-500 p-[8px] hover:bg-blue-700 flex justify-center items-center">
+      <img 
+        className="w-5 h-5 text-white filter-white" 
+        onClick={toggleQuoraPopup}
+        src={add}
+        alt="Add Icon" 
+      />
+    </div>
+      }
+      <div className='bg-gray-700 rounded-xl p-3 cursor-pointer'
+      onClick={() => setActiveTab('Notifications')}>
+      <img src={notification} alt="Notifications" className="w-5 h-5 filter-white" />
+      {unreadNotifications > 0 && (
+  <span className="absolute top-3 right-3 flex items-center justify-center bg-red-600 text-white text-xs font-bold w-5 h-5 rounded-full">
+    {unreadNotifications}
+  </span>
+)}
+
+      </div>
     </div>
   </div>
 
@@ -187,6 +245,7 @@ function Dashboard() {
     {activeTab === 'Contact' && <ContactComponent />}
     {activeTab === 'Privacy' && <PrivacyComponent />}
     {activeTab === 'Setting' && <SettingComponent />}
+    {activeTab === 'Notifications' && <NotificationsComponent />}
   </div>
 </div>
 </div>
