@@ -22,6 +22,7 @@ const ProfileComponent = () => {
   const [showQuoraPopup, setShowQuoraPopup] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [openMenuPostId, setOpenMenuPostId] = useState(null);
+  const currentUser = auth.currentUser;
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -209,7 +210,7 @@ const ProfileComponent = () => {
       </div>
           </div>
           <p className="mt-4 text-sm text-gray-400">
-            {user ? `${user.name}, an Indonesian-based senior UI/UX designer with more than 10 years experience in various industries from early-stage startups to unicorns. His hobby is playing games.` : "User information not available."}
+            {user ? user.bio : 'This user has no bio'}
           </p>
           <GlowingButtons />
           <div className= "h-[600px]">
@@ -251,7 +252,7 @@ const ProfileComponent = () => {
       </div>
       <div className="w-[30%] bg-gray-800 p-4 ml-4 rounded-lg bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
         {/* Inbox */}
-        <TabLayout onUserClick={handleUserClick} />
+        <TabLayout id={currentUser.uid} onUserClick={handleUserClick} />
       </div>
     </div>
   );

@@ -3,8 +3,18 @@ import TabLayout from './TabLayout';
 import OptionTabs from './OptionTabs';
 import PostInput from './PostInput';
 import FollowUsersComponent from './FollowUsersComponent';
+import UserProfileComponent from './user-profile-component';
 
 function ExploreComponent() {
+  const [selectedUserId, setSelectedUserId] = useState(null);
+
+  const handleUserClick = (userId) => {
+    setSelectedUserId(userId);
+  };
+
+  if (selectedUserId) {
+    return <UserProfileComponent userId={selectedUserId} />;
+  }
 
   return (
     <div className="flex-1 flex p-4">
@@ -17,7 +27,7 @@ function ExploreComponent() {
       </div>
       <div className="w-[30%] bg-gray-800 p-4 ml-4 rounded-lg bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
           {/* Inbox */}
-          <FollowUsersComponent/>
+          <FollowUsersComponent onUserClick={handleUserClick}/>
         </div>
     </div>
   );

@@ -4,40 +4,47 @@ import { auth, db } from '../firebase';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import '../FollowingListComponent.css'; // Import CSS for animations
 
-function FollowersListComponent({ onUserClick }) {
+function FollowersListComponent({ userId, onUserClick }) {
   const [followersUsers, setFollowersUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userFollowStatus, setUserFollowStatus] = useState({});
   const currentUserId = auth.currentUser ? auth.currentUser.uid : null;
 
   useEffect(() => {
-    if (!currentUserId) return;
+    if (!userId) return;
 
     const fetchFollowers = async () => {
       try {
-        // Fetch current user's document
-        const currentUserDocRef = doc(db, 'users', currentUserId);
-        const currentUserDocSnapshot = await getDoc(currentUserDocRef);
-        const currentUserData = currentUserDocSnapshot.data();
+        // Fetch user's document
+        const userDocRef = doc(db, 'users', userId);
+        const userDocSnapshot = await getDoc(userDocRef);
+        const userData = userDocSnapshot.data();
 
         // Fetch user details for each follower user
-        if (currentUserData && currentUserData.followers) {
-          const followersIds = currentUserData.followers;
+        if (userData && userData.followers) {
+          const followersIds = userData.followers;
 
           const followersUsersList = await Promise.all(
-            followersIds.map(async (userId) => {
-              const userDocRef = doc(db, 'users', userId);
-              const userDocSnapshot = await getDoc(userDocRef);
+            followersIds.map(async (followerId) => {
+              const followerDocRef = doc(db, 'users', followerId);
+              const followerDocSnapshot = await getDoc(followerDocRef);
               return {
-                id: userId,
-                ...userDocSnapshot.data(),
+                id: followerId,
+                ...followerDocSnapshot.data(),
               };
             })
           );
 
           // Create a map for user follow status
           const followStatusMap = {};
-          followersIds.forEach(id => (followStatusMap[id] = true));
+          if (currentUserId) {
+            const currentUserDocRef = doc(db, 'users', currentUserId);
+            const currentUserDocSnapshot = await getDoc(currentUserDocRef);
+            const currentUserData = currentUserDocSnapshot.data();
+            if (currentUserData && currentUserData.following) {
+              currentUserData.following.forEach(id => (followStatusMap[id] = true));
+            }
+          }
           setUserFollowStatus(followStatusMap);
           setFollowersUsers(followersUsersList);
         } else {
@@ -51,42 +58,38 @@ function FollowersListComponent({ onUserClick }) {
     };
 
     fetchFollowers();
-  }, [currentUserId]);
+  }, [userId, currentUserId]);
 
-  const handleFollowToggle = async (userId) => {
+  const handleFollowToggle = async (followerId) => {
     if (!currentUserId) {
       console.error('No current user logged in');
       return;
     }
 
-    const userDocRef = doc(db, 'users', userId);
+    const followerDocRef = doc(db, 'users', followerId);
     const currentUserDocRef = doc(db, 'users', currentUserId);
 
     try {
-      const isFollowing = userFollowStatus[userId] || false;
+      const isFollowing = userFollowStatus[followerId] || false;
 
       if (isFollowing) {
         // Unfollow
-        await updateDoc(userDocRef, {
+        await updateDoc(followerDocRef, {
           followers: arrayRemove(currentUserId),
         });
         await updateDoc(currentUserDocRef, {
-          following: arrayRemove(userId),
+          following: arrayRemove(followerId),
         });
-        setUserFollowStatus(prev => ({ ...prev, [userId]: false }));
-        setFollowersUsers(prev => prev.filter(user => user.id !== userId));
+        setUserFollowStatus(prev => ({ ...prev, [followerId]: false }));
       } else {
         // Follow
-        await updateDoc(userDocRef, {
+        await updateDoc(followerDocRef, {
           followers: arrayUnion(currentUserId),
         });
         await updateDoc(currentUserDocRef, {
-          following: arrayUnion(userId),
+          following: arrayUnion(followerId),
         });
-        const userDocSnapshot = await getDoc(doc(db, 'users', userId));
-        const newUser = { id: userId, ...userDocSnapshot.data() };
-        setFollowersUsers(prev => [...prev, newUser]);
-        setUserFollowStatus(prev => ({ ...prev, [userId]: true }));
+        setUserFollowStatus(prev => ({ ...prev, [followerId]: true }));
       }
     } catch (error) {
       console.error('Error updating follow status:', error);
@@ -128,15 +131,17 @@ function FollowersListComponent({ onUserClick }) {
                           : user.credentials || ""}
                       </p>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevent the click event from bubbling up to the `li`
-                        handleFollowToggle(user.id);
-                      }}
-                      className="ml-auto text-sm px-2 py-1 bg-gradient-to-r from-purple-200 to-blue-300 text-gray-950 rounded-xl shadow-md hover:from-blue-300 hover:to-purple-200 transition-all duration-500 transform hover:scale-110 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-50 backdrop-filter backdrop-blur-md"
-                    >
-                      {userFollowStatus[user.id] ? 'Following' : 'Follow'}
-                    </button>
+                    {currentUserId && currentUserId !== user.id && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent the click event from bubbling up to the `li`
+                          handleFollowToggle(user.id);
+                        }}
+                        className="ml-auto text-sm px-2 py-1 bg-gradient-to-r from-purple-200 to-blue-300 text-gray-950 rounded-xl shadow-md hover:from-blue-300 hover:to-purple-200 transition-all duration-500 transform hover:scale-110 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-50 backdrop-filter backdrop-blur-md"
+                      >
+                        {userFollowStatus[user.id] ? 'Following' : 'Follow'}
+                      </button>
+                    )}
                   </li>
                 </CSSTransition>
               ))

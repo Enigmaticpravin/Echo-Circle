@@ -3,6 +3,8 @@ import { collection, query, orderBy, getDocs, startAfter, limit, db, auth, updat
 import { formatDistanceToNow } from 'date-fns';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import setting from '../images/setting.svg';
+import { useNavigate } from 'react-router-dom';
+import UserProfileComponent from './user-profile-component';
 import read from '../images/task.svg';
 
 const NotificationsComponent = () => {
@@ -10,6 +12,9 @@ const NotificationsComponent = () => {
   const [loading, setLoading] = useState(true);
   const [lastVisible, setLastVisible] = useState(null);
   const [hasMore, setHasMore] = useState(true);
+  const [currentView, setCurrentView] = useState('notifications'); // State to track the current view
+  const [selectedUserId, setSelectedUserId] = useState(null); // State to track the selected user ID
+  const navigate = useNavigate();
   const [users, setUsers] = useState({});
 
   // Fetch users data to get profile pictures
@@ -61,20 +66,29 @@ const NotificationsComponent = () => {
     fetchNotifications(lastVisible);
   };
 
+  const handleNotificationClick = (notification) => {
+    if (notification.type === 'follow') {
+      setSelectedUserId(notification.additionalId);
+      setCurrentView('profile'); // Switch to the profile view
+    } else if (notification.type === 'upvote') {
+      navigate(`/post/${notification.additionalId}`); // Redirect to the post details page
+    }
+  };
+
   const markAllAsRead = async () => {
     const currentUser = auth.currentUser;
     if (!currentUser) return;
-  
+
     const notificationsRef = collection(db, 'notifications', currentUser.uid, 'userNotifications');
     const q = query(notificationsRef, where('read', '==', false));
-  
+
     const querySnapshot = await getDocs(q);
     const batch = writeBatch(db);
-  
+
     querySnapshot.docs.forEach(doc => {
       batch.update(doc.ref, { read: true });
     });
-  
+
     await batch.commit();
     setNotifications(prevNotifications => prevNotifications.map(notification => ({
       ...notification,
@@ -88,6 +102,11 @@ const NotificationsComponent = () => {
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500"></div>
       </div>
     );
+  }
+
+  // Conditionally render the profile or notifications list
+  if (currentView === 'profile' && selectedUserId) {
+    return <UserProfileComponent userId={selectedUserId} />;
   }
 
   return (
@@ -107,7 +126,7 @@ const NotificationsComponent = () => {
             <button
               className=" text-white py-2 px-4 rounded flex items-center space-x-1"
             >
-               <img src={setting} alt='Settings' className='filter-white'/>
+              <img src={setting} alt='Settings' className='filter-white'/>
               <span>Settings</span>
             </button>
           </div>
@@ -125,7 +144,7 @@ const NotificationsComponent = () => {
                 <div
                   className={`py-2 px-4 rounded-lg w-full shadow-md bg-gray-600 border cursor-pointer ${notification.read ? 'border-gray-200' : 'border-blue-400'
                     } flex items-start`}
-                >
+                  onClick={() => handleNotificationClick(notification)}>
                   <div className="flex items-center space-x-4 justify-between w-full">
                     <img
                       src={users[notification.senderId]?.profileImage || '/default-profile.png'}
@@ -137,8 +156,8 @@ const NotificationsComponent = () => {
                         <p className="text-sm text-gray-100">{notification.content}</p>
                       </div>
                       <p className="text-xs text-gray-300">
-                          {formatDistanceToNow(notification.date?.toDate())} ago
-                        </p>
+                        {formatDistanceToNow(notification.date?.toDate())} ago
+                      </p>
                     </div>
                     <div className={`w-4 h-4 bg-red-500 rounded-full ${notification.read ? 'hidden' : ''}`}></div>
                   </div>

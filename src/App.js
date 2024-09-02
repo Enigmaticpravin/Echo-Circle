@@ -11,7 +11,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/user-profile" element={<UserProfileComponent />} />
+        <Route path="/user-profile/:userId" element={<UserProfileComponent />} />
         <Route path='/notifications' element={<NotificationsComponent/>}/>
       </Routes>
     </Router>

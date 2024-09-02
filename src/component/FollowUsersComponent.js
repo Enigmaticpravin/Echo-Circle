@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, onSnapshot, query, where, serverTimestamp, deleteDoc, addDoc } from '../firebase';
 import { auth, db } from '../firebase';
 
-function FollowUsersComponent() {
+function FollowUsersComponent({ onUserClick }) {
   const [users, setUsers] = useState([]);
   const [userFollowStatus, setUserFollowStatus] = useState({});
   const [loading, setLoading] = useState(true);
@@ -126,7 +126,7 @@ function FollowUsersComponent() {
             <li
               key={user.id}
               className="flex items-center space-x-4 p-2 rounded-xl hover:bg-gray-900 cursor-pointer m-2 transition-transform transform"
-            >
+              onClick={() => onUserClick(user.id)} >
               <img
                 src={user.profileImage}
                 alt={user.name}

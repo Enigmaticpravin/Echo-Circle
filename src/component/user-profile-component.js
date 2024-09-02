@@ -15,6 +15,7 @@ import search from '../images/search-normal.svg';
 const UserProfileComponent = ({ userId }) => {
   const [user, setUser] = useState(null);
   const [expandedPosts, setExpandedPosts] = useState([]);
+  const [selectedUserId, setSelectedUserId] = useState(null);
   const [posts, setPosts] = useState([]);
 
   useEffect(() => {
@@ -50,6 +51,14 @@ const UserProfileComponent = ({ userId }) => {
     fetchUserData();
     fetchUserPosts();
   }, [userId]);
+
+  const handleUserClick = (userId) => {
+    setSelectedUserId(userId);
+  };
+
+  if (selectedUserId) {
+    return <UserProfileComponent userId={selectedUserId} />;
+  }
 
   const handlePostClick = (id) => {
     setExpandedPosts(prev => {
@@ -184,7 +193,7 @@ const UserProfileComponent = ({ userId }) => {
         </div>
       </div>
       <div className="w-[30%] bg-gray-800 p-4 ml-4 rounded-lg bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
-        <TabLayout />
+        <TabLayout id={userId} onUserClick={handleUserClick}/>
       </div>
     </div>
   );

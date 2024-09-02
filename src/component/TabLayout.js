@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import FollowingListComponent from './FollowingListComponent';
 import FollowersListComponent from './FollowersListComponent';
 
-const TabLayout = ({ onUserClick }) => {
+const TabLayout = ({id, onUserClick }) => {
   const [activeTab, setActiveTab] = useState('tab1');
 
   const handleTabClick = (tab) => {
@@ -24,7 +24,7 @@ const TabLayout = ({ onUserClick }) => {
         />
       </div>
       <div className="p-4 bg-gray-800 rounded-b-lg text-white">
-        {activeTab === 'tab1' && <FollowersListComponent onUserClick={onUserClick}/>}
+        {activeTab === 'tab1' && <FollowersListComponent userId={id} onUserClick={onUserClick}/>}
         {activeTab === 'tab2' && <FollowingListComponent onUserClick={onUserClick}/>}
       </div>
     </div>
