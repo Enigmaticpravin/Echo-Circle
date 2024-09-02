@@ -27,7 +27,6 @@ function DefaultPostComponent() {
         ...doc.data(),
       }));
       
-      // Fetch user data for each post
       const postsWithUserData = await Promise.all(postsArray.map(async (post) => {
         const user = await fetchUserData(post.user);
         return { ...post, user };
@@ -211,58 +210,58 @@ function DefaultPostComponent() {
     return (
       <div className='relative block w-full items-center transition-all duration-300 ease-in-out'>
         <div className='flex items-center relative transition-all duration-300 ease-in-out'>
-        <div className="flex py-1 px-3 w-fit items-center space-x-4 mt-4 text-gray-400 bg-gray-900 rounded-lg">
-  <button
-    className={`flex items-center space-x-1 transition-all duration-300 ease-in-out
+          <div className="flex py-1 px-3 w-fit items-center space-x-4 mt-4 text-gray-400 bg-gray-900 rounded-lg">
+            <button
+              className={`flex items-center space-x-1 transition-all duration-300 ease-in-out
                 ${isUpvoted ? 'text-blue-500 bg-slate-600 rounded-xl px-4 py-[2px]' : 'hover:text-blue-500'}`}
-    onClick={(e) => {
-      e.stopPropagation();
-      handleUpvote(postId);
-    }}
-  >
-    <img src={upvote} alt="Upvote" className={`w-5 h-5 filter-white`} />
-    <span>{(upvotes?.length || 0)}</span>
-  </button>
-  <button className="flex items-center space-x-1 hover:text-red-500 transition-colors duration-200">
-    <img src={downvote} alt="Downvote" className="w-5 h-5 filter-white" />
-  </button>
-  <button className="flex items-center space-x-1 hover:text-green-500 transition-colors duration-200"
-    onClick={(e) => {e.stopPropagation(); setShowComments(!showComments)}}>
-    <img src={comment} alt="Comment" className="w-5 h-5 filter-white" />
-    <span>{comments}</span>
-  </button>
-  <button className="flex items-center space-x-1 hover:text-yellow-500 transition-colors duration-200">
-    <img src={share} alt="Share" className="w-5 h-5 filter-white" />
-  </button>
-</div>
-        <div className='ml-auto self-center mt-4 bg-gray-900 rounded-lg p-2 cursor-pointer' 
-        onClick={(e) => {e.stopPropagation(); toggleMenu(postId)}}>
-          <img src={more} alt='More' className='w-5 h-5 filter-white' />
-        </div>
-        {openMenuPostId === postId && (
-          <div className="absolute right-0 mt-2 w-48 bg-gray-600 rounded-lg shadow-lg z-10 mb-64 animate-fold">
-            <ul className="py-1 text-sm text-white relative">
-              {isCurrentUserPost ? (
-                <>
-                  <li className="px-4 py-2 hover:bg-gray-700 mt-2 hover:rounded-lg ml-2 mr-2 cursor-pointer">Delete</li>
-                  <li className="px-4 py-2 hover:bg-gray-700 mt-2 hover:rounded-lg ml-2 mr-2 cursor-pointer">Copy Link</li>
-                </>
-              ) : (
-                <>
-                  <li className="px-4 py-2 hover:bg-gray-700 mt-2 hover:rounded-lg ml-2 mr-2 cursor-pointer">Copy Link</li>
-                  <li className="px-4 py-2 hover:bg-gray-700 mt-2 hover:rounded-lg ml-2 mr-2 cursor-pointer">Report</li>
-                  <li className="px-4 py-2 hover:bg-gray-700 mt-2 hover:rounded-lg mb-2 ml-2 mr-2 cursor-pointer">Not Interested</li>
-                </>
-              )}
-            </ul>
-            <div className="absolute -bottom-2 right-3 w-4 h-4 bg-gray-600 rounded-md transform rotate-45"></div>
+              onClick={(e) => {
+                e.stopPropagation();
+                handleUpvote(postId);
+              }}
+            >
+              <img src={upvote} alt="Upvote" className={`w-5 h-5 filter-white`} />
+              <span>{(upvotes?.length || 0)}</span>
+            </button>
+            <button className="flex items-center space-x-1 hover:text-red-500 transition-colors duration-200">
+              <img src={downvote} alt="Downvote" className="w-5 h-5 filter-white" />
+            </button>
+            <button className="flex items-center space-x-1 hover:text-green-500 transition-colors duration-200"
+              onClick={(e) => { e.stopPropagation(); setShowComments(!showComments) }}>
+              <img src={comment} alt="Comment" className="w-5 h-5 filter-white" />
+              <span>{comments}</span>
+            </button>
+            <button className="flex items-center space-x-1 hover:text-yellow-500 transition-colors duration-200">
+              <img src={share} alt="Share" className="w-5 h-5 filter-white" />
+            </button>
           </div>
-        )}
+          <div className='ml-auto self-center mt-4 bg-gray-900 rounded-lg p-2 cursor-pointer'
+            onClick={(e) => { e.stopPropagation(); toggleMenu(postId) }}>
+            <img src={more} alt='More' className='w-5 h-5 filter-white' />
+          </div>
+          {openMenuPostId === postId && (
+            <div className="absolute right-0 mt-2 w-48 bg-gray-600 rounded-lg shadow-lg z-10 mb-64 animate-fold">
+              <ul className="py-1 text-sm text-white relative">
+                {isCurrentUserPost ? (
+                  <>
+                    <li className="px-4 py-2 hover:bg-gray-700 mt-2 hover:rounded-lg ml-2 mr-2 cursor-pointer">Delete</li>
+                    <li className="px-4 py-2 hover:bg-gray-700 mt-2 hover:rounded-lg ml-2 mr-2 cursor-pointer">Copy Link</li>
+                  </>
+                ) : (
+                  <>
+                    <li className="px-4 py-2 hover:bg-gray-700 mt-2 hover:rounded-lg ml-2 mr-2 cursor-pointer">Copy Link</li>
+                    <li className="px-4 py-2 hover:bg-gray-700 mt-2 hover:rounded-lg ml-2 mr-2 cursor-pointer">Report</li>
+                    <li className="px-4 py-2 hover:bg-gray-700 mt-2 hover:rounded-lg mb-2 ml-2 mr-2 cursor-pointer">Not Interested</li>
+                  </>
+                )}
+              </ul>
+              <div className="absolute -bottom-2 right-3 w-4 h-4 bg-gray-600 rounded-md transform rotate-45"></div>
+            </div>
+          )}
         </div>
-         {showComments && <CommentSystem postId={postId} />}
-         {showUpvotePopup && (
-        <UpvotePopup users={upvoteUsers} onClose={closeUpvotePopup} />
-      )}
+        {showComments && <CommentSystem postId={postId} />}
+        {showUpvotePopup && (
+          <UpvotePopup users={upvoteUsers} onClose={closeUpvotePopup} />
+        )}
       </div>
     );
   };

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import DefaultPostComponent from './DefaultPostComponent';
 
 const OptionTabs = () => {
-  const [activeTab, setActiveTab] = useState('following');
+  const [activeTab, setActiveTab] = useState('recent');
 
   const handleTabClick = (tab) => {
     setActiveTab(tab);

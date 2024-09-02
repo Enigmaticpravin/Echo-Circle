@@ -15,7 +15,7 @@ function ExploreComponent() {
         <OptionTabs/>
         </div>
       </div>
-      <div className="w-1/4 bg-gray-800 p-4 ml-4 rounded-lg bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
+      <div className="w-[30%] bg-gray-800 p-4 ml-4 rounded-lg bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
           {/* Inbox */}
           <FollowUsersComponent/>
         </div>

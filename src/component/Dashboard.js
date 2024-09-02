@@ -24,7 +24,7 @@ import notification from '../images/notification-1.svg';
 function Dashboard() {
   const [user, setUser] = useState(null);
   const [allUsers, setAllUsers] = useState([]);
-  const [activeTab, setActiveTab] = useState('Chats');
+  const [activeTab, setActiveTab] = useState('Explore');
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [message, setMessage] = useState('');
   const [showQuoraPopup, setShowQuoraPopup] = useState(false);

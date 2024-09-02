@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, onSnapshot } from '../firebase';
+import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, onSnapshot, query, where, serverTimestamp, deleteDoc, addDoc } from '../firebase';
 import { auth, db } from '../firebase';
 
 function FollowUsersComponent() {
@@ -66,6 +66,7 @@ function FollowUsersComponent() {
 
     const userDocRef = doc(db, 'users', userId);
     const currentUserDocRef = doc(db, 'users', currentUserId);
+    const notificationDocRef = collection(db, 'notifications', userId, 'userNotifications');
 
     try {
       const isFollowing = userFollowStatus[userId] || false;
@@ -74,15 +75,37 @@ function FollowUsersComponent() {
         // Unfollow
         await Promise.all([
           updateDoc(userDocRef, { followers: arrayRemove(currentUserId) }),
-          updateDoc(currentUserDocRef, { following: arrayRemove(userId) })
+          updateDoc(currentUserDocRef, { following: arrayRemove(userId) }),
         ]);
+        const q = query(notificationDocRef,
+          where("senderId", "==", currentUserId),
+          where("receiverId", "==", userId),
+          where("additionalId", "==", userId),
+          where("type", "==", "follow"));
+
+        const querySnapshot = await getDocs(q);
+
+        // Delete all matching notifications
+        querySnapshot.forEach(async (doc) => {
+          await deleteDoc(doc.ref);
+        });
         setUserFollowStatus(prev => ({ ...prev, [userId]: false }));
       } else {
         // Follow
         await Promise.all([
           updateDoc(userDocRef, { followers: arrayUnion(currentUserId) }),
-          updateDoc(currentUserDocRef, { following: arrayUnion(userId) })
+          updateDoc(currentUserDocRef, { following: arrayUnion(userId) }),
         ]);
+        await addDoc(notificationDocRef, {
+          content: `${auth.currentUser.displayName} followed you`,
+          type: 'follow',
+          date: serverTimestamp(),
+          read: false,
+          additionalId: userId,
+          senderId: currentUserId,
+          receiverId: userId,
+          postContent: "none",
+        });
         setUserFollowStatus(prev => ({ ...prev, [userId]: true }));
       }
     } catch (error) {
