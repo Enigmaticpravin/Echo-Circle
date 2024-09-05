@@ -10,7 +10,7 @@ import UpvotersDisplay from './UpvotersDisplay';
 import CommentSystem from '../component/comment-system';
 import UpvotePopup from '../component/UpvotePopup';
 
-function DefaultPostComponent() {
+function FollowingPostComponent() {
   const [posts, setPosts] = useState([]);
   const [expandedPosts, setExpandedPosts] = useState([]);
   const [userCache, setUserCache] = useState({});
@@ -19,24 +19,53 @@ function DefaultPostComponent() {
   const [upvoteUsers, setUpvoteUsers] = useState([]);
 
   useEffect(() => {
-    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
-    
-    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
-      const postsArray = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+    const fetchFollowingPosts = async () => {
+      const currentUser = auth.currentUser;
+      if (!currentUser) return;
+  
+      // Step 1: Fetch the list of users that the current user follows
+      const userRef = doc(db, 'users', currentUser.uid);
+      const userSnap = await getDoc(userRef);
       
-      const postsWithUserData = await Promise.all(postsArray.map(async (post) => {
-        const user = await fetchUserData(post.user);
-        return { ...post, user };
-      }));
-      
-      setPosts(postsWithUserData);
-    });
-
-    return () => unsubscribe();
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        const following = userData.following || [];  // Assuming 'following' is an array of user IDs the current user follows
+  
+        if (following.length === 0) {
+          // If the user is not following anyone, setPosts to empty
+          setPosts([]);
+          return;
+        }
+  
+        // Step 2: Query posts from users the current user follows
+        const q = query(
+          collection(db, "posts"),
+          where("user", "in", following)
+        );
+  
+        const unsubscribe = onSnapshot(q, async (querySnapshot) => {
+          const postsArray = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+  
+          const postsWithUserData = await Promise.all(postsArray.map(async (post) => {
+            const user = await fetchUserData(post.user);
+            return { ...post, user };
+          }));
+  
+          setPosts(postsWithUserData);
+        });
+  
+        return () => unsubscribe();
+      } else {
+        console.error("User data not found!");
+      }
+    };
+  
+    fetchFollowingPosts();
   }, []);
+  
 
   const fetchUserData = async (postUserId) => {
     if (userCache[postUserId]) {
@@ -92,6 +121,7 @@ function DefaultPostComponent() {
       }
     });
   };
+  
 
   const handleUpvoteNotification = async (postId, isUpvoted, postOwnerId, postContent) => {
     const currentUser = auth.currentUser;
@@ -348,4 +378,4 @@ function DefaultPostComponent() {
   );
 }
 
-export default DefaultPostComponent;
+export default FollowingPostComponent;

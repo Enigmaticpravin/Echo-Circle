@@ -25,7 +25,7 @@ const TabLayout = ({id, onUserClick }) => {
       </div>
       <div className="p-4 bg-gray-800 rounded-b-lg text-white">
         {activeTab === 'tab1' && <FollowersListComponent userId={id} onUserClick={onUserClick}/>}
-        {activeTab === 'tab2' && <FollowingListComponent onUserClick={onUserClick}/>}
+        {activeTab === 'tab2' && <FollowingListComponent userId={id} onUserClick={onUserClick}/>}
       </div>
     </div>
   );

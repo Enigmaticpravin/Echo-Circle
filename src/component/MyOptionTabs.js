@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import DefaultPostComponent from './DefaultPostComponent';
-import FollowingPostComponent from './FollowingPostComponent';
-import PopularPostComponent from './PopularPostComponent';
+import MyPostComponent from './MyPostComponent';
 
-const OptionTabs = () => {
+const MyOptionTabs = ({id}) => {
   const [activeTab, setActiveTab] = useState('recent');
 
   const handleTabClick = (tab) => {
@@ -12,7 +10,7 @@ const OptionTabs = () => {
 
   return (
     <div className="w-full max-w-full mx-auto bg-transparent mt-4">
-      <div className="flex w-fit ml-auto">
+      <div className="flex w-fit">
         <Tab
           label="Recent"
           isActive={activeTab === 'recent'}
@@ -31,9 +29,9 @@ const OptionTabs = () => {
       </div>
      <div className="rounded-xl">
         {/* Display content based on the selected tab */}
-        {activeTab === 'recent' && <DefaultPostComponent/>}
-        {activeTab === 'following' && <FollowingPostComponent/>}
-        {activeTab === 'popular' && <PopularPostComponent/>}
+        {activeTab === 'recent' && <MyPostComponent id={id}/>}
+        {activeTab === 'following' && <p>Showing Following content...</p>}
+        {activeTab === 'popular' && <p>Showing Popular content...</p>}
       </div>
     </div>
   );
@@ -41,10 +39,10 @@ const OptionTabs = () => {
 
 const Tab = ({ label, isActive, onClick }) => (
   <button
-    className={`flex-1 py-1 mr-2 px-4 text-center border rounded-xl transition-colors duration-300 ease-in-out ${
+    className={`flex-1 py-1 mr-2 px-4 text-center border rounded-[20px] transition-colors duration-300 ease-in-out ${
       isActive
         ? 'border-blue-500 text-white bg-gray-700'
-        : 'border-transparent text-gray-400 hover:border-gray-500'
+        : ' border-transparent bg-gray-800 text-gray-400 hover:border-gray-500 hover:text-white'
     }`}
     onClick={onClick}
   >
@@ -52,4 +50,4 @@ const Tab = ({ label, isActive, onClick }) => (
   </button>
 );
 
-export default OptionTabs;
+export default MyOptionTabs;

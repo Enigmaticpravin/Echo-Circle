@@ -10,7 +10,7 @@ import UpvotersDisplay from './UpvotersDisplay';
 import CommentSystem from '../component/comment-system';
 import UpvotePopup from '../component/UpvotePopup';
 
-function DefaultPostComponent() {
+function PopularPostComponent() {
   const [posts, setPosts] = useState([]);
   const [expandedPosts, setExpandedPosts] = useState([]);
   const [userCache, setUserCache] = useState({});
@@ -19,7 +19,7 @@ function DefaultPostComponent() {
   const [upvoteUsers, setUpvoteUsers] = useState([]);
 
   useEffect(() => {
-    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+    const q = query(collection(db, "posts"), orderBy("viewCount", "desc"));
     
     const unsubscribe = onSnapshot(q, async (querySnapshot) => {
       const postsArray = querySnapshot.docs.map(doc => ({
@@ -37,6 +37,7 @@ function DefaultPostComponent() {
 
     return () => unsubscribe();
   }, []);
+  
 
   const fetchUserData = async (postUserId) => {
     if (userCache[postUserId]) {
@@ -92,6 +93,7 @@ function DefaultPostComponent() {
       }
     });
   };
+  
 
   const handleUpvoteNotification = async (postId, isUpvoted, postOwnerId, postContent) => {
     const currentUser = auth.currentUser;
@@ -348,4 +350,4 @@ function DefaultPostComponent() {
   );
 }
 
-export default DefaultPostComponent;
+export default PopularPostComponent;

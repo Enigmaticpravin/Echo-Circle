@@ -4,19 +4,19 @@ import { auth, db } from '../firebase';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import '../FollowingListComponent.css'; // Import CSS for animations
 
-function FollowingListComponent({ onUserClick }) {
+function FollowingListComponent({userId, onUserClick }) {
   const [followingUsers, setFollowingUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userFollowStatus, setUserFollowStatus] = useState({});
   const currentUserId = auth.currentUser ? auth.currentUser.uid : null;
 
   useEffect(() => {
-    if (!currentUserId) return;
+    if (!userId) return;
 
     const fetchFollowing = async () => {
       try {
         // Fetch current user's document
-        const currentUserDocRef = doc(db, 'users', currentUserId);
+        const currentUserDocRef = doc(db, 'users', userId);
         const currentUserDocSnapshot = await getDoc(currentUserDocRef);
         const currentUserData = currentUserDocSnapshot.data();
 
@@ -51,7 +51,7 @@ function FollowingListComponent({ onUserClick }) {
     };
 
     fetchFollowing();
-  }, [currentUserId]);
+  }, [userId]);
 
   const handleFollowToggle = async (userId) => {
     if (!currentUserId) {

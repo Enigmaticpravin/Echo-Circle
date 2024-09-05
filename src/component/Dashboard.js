@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { auth, db, doc, getDoc, collection, getDocs, query, where } from '../firebase';
+import { auth, db, doc, getDoc, collection, getDocs, query, where, onSnapshot } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { addDoc, serverTimestamp } from 'firebase/firestore';
 import Chat from './Chat';
@@ -44,15 +44,17 @@ function Dashboard() {
     }
   };
 
-  const fetchUnreadNotifications = async (currentUser) => {
-    try {
-      const notificationsRef = collection(db, 'notifications', currentUser.uid, 'userNotifications');
-      const q = query(notificationsRef, where('read', '==', false), where('receiverId', '==', currentUser.uid));
-      const snapshot = await getDocs(q);
+  const fetchUnreadNotifications = (currentUser) => {
+    const notificationsRef = collection(db, 'notifications', currentUser.uid, 'userNotifications');
+    const q = query(notificationsRef, where('read', '==', false), where('receiverId', '==', currentUser.uid));
+    
+    // Use onSnapshot to listen to real-time changes
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       setUnreadNotifications(snapshot.size);
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-    }
+    });
+  
+    // Cleanup the listener on component unmount
+    return () => unsubscribe();
   };
 
   useEffect(() => {
@@ -64,14 +66,21 @@ function Dashboard() {
           setUser({ ...userSnap.data(), uid: currentUser.uid });
         }
         fetchAllUsers();
-        fetchUnreadNotifications(currentUser);
+        
+        // Set up the real-time notifications listener
+        const unsubscribeNotifications = fetchUnreadNotifications(currentUser);
+        
+        return () => {
+          unsubscribeNotifications(); // Clean up notifications listener
+        };
       } else {
         navigate('/');
       }
     });
-
+  
     return () => unsubscribe();
   }, [navigate]);
+  
 
   const handleSendMessage = async () => {
     if (message.trim()) {
@@ -161,7 +170,7 @@ function Dashboard() {
     <h2 className="text-xl font-semibold">{activeTab}</h2>
     <div className="flex items-center space-x-2 w-4/5 ml-5 mr-5 bg-gray-700 p-2 rounded-full shadow-lg">
       <img
-        src={search}  // Replace with your image path
+        src={search}
         alt="Search Icon"
         className="w-5 h-5 text-gray-300 filter-white ml-2"
       />
@@ -182,16 +191,16 @@ function Dashboard() {
       />
     </div>
       }
-      <div className='bg-gray-700 rounded-xl p-3 cursor-pointer'
-      onClick={() => setActiveTab('Notifications')}>
-      <img src={notification} alt="Notifications" className="w-5 h-5 filter-white" />
-      {unreadNotifications > 0 && (
-  <span className="absolute top-3 right-3 flex items-center justify-center bg-red-600 text-white text-xs font-bold w-5 h-5 rounded-full">
-    {unreadNotifications}
-  </span>
-)}
+            <div className='bg-gray-700 rounded-xl p-3 cursor-pointer'
+              onClick={() => setActiveTab('Notifications')}>
+              <img src={notification} alt="Notifications" className="w-5 h-5 filter-white" />
+              {unreadNotifications > 0 && (
+                <span className={`absolute top-3 right-3 flex items-center justify-center bg-red-600 text-white text-xs font-bold w-5 h-5 rounded-full notification-badge ${unreadNotifications > 0 ? 'entering' : 'leaving'}`}>
+                  {unreadNotifications}
+                </span>
+              )}
+            </div>
 
-      </div>
     </div>
   </div>
 

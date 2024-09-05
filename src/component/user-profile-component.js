@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { doc, getDocs, collection, query, where, getDoc } from 'firebase/firestore';
+import { doc, getDocs, collection, query, where, getDoc, auth, updateDoc, arrayRemove, arrayUnion, deleteDoc, addDoc, serverTimestamp } from '../firebase';
 import { db } from '../firebase';
 import check from '../images/bluetick.png';
 import PostHeader from './PostHeader';
@@ -7,6 +7,7 @@ import upvote from '../images/like-1.svg';
 import comment from '../images/message.svg';
 import downvote from '../images/dislike.svg';
 import share from '../images/send-2.svg';
+import MyOptionTabs from './MyOptionTabs';
 import more from  '../images/more.svg';
 import TabLayout from './TabLayout';
 import GlowingButtons from './glowingbuttons';
@@ -17,6 +18,8 @@ const UserProfileComponent = ({ userId }) => {
   const [expandedPosts, setExpandedPosts] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [posts, setPosts] = useState([]);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const currentUserId = auth.currentUser ? auth.currentUser.uid : null;
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -25,6 +28,14 @@ const UserProfileComponent = ({ userId }) => {
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           setUser(userSnap.data());
+          if (currentUserId) {
+            const currentUserRef = doc(db, 'users', currentUserId);
+            const currentUserSnap = await getDoc(currentUserRef);
+            const currentUserData = currentUserSnap.data();
+            if (currentUserData && currentUserData.following.includes(userId)) {
+              setIsFollowing(true);
+            }
+          }
         }
       } catch (error) {
         console.log(error);
@@ -50,7 +61,64 @@ const UserProfileComponent = ({ userId }) => {
 
     fetchUserData();
     fetchUserPosts();
-  }, [userId]);
+  }, [userId, currentUserId]);
+
+  const handleFollowToggle = async () => {
+    if (!currentUserId) {
+      console.error('No current user logged in');
+      return;
+    }
+
+    const userDocRef = doc(db, 'users', userId);
+    const currentUserDocRef = doc(db, 'users', currentUserId);
+    const notificationDocRef = collection(db, 'notifications', userId, 'userNotifications');
+
+    try {
+      if (isFollowing) {
+        // Unfollow
+        await updateDoc(userDocRef, {
+          followers: arrayRemove(currentUserId),
+        });
+        await updateDoc(currentUserDocRef, {
+          following: arrayRemove(userId),
+        });
+        const q = query(notificationDocRef,
+          where("senderId", "==", currentUserId),
+          where("receiverId", "==", userId),
+          where("additionalId", "==", currentUserId),
+          where("type", "==", "follow"));
+
+        const querySnapshot = await getDocs(q);
+
+        // Delete all matching notifications
+        querySnapshot.forEach(async (doc) => {
+          await deleteDoc(doc.ref);
+        });
+        setIsFollowing(false);
+      } else {
+        // Follow
+        await updateDoc(userDocRef, {
+          followers: arrayUnion(currentUserId),
+        });
+        await updateDoc(currentUserDocRef, {
+          following: arrayUnion(userId),
+        });
+        await addDoc(notificationDocRef, {
+          content: `${auth.currentUser.displayName} followed you`,
+          type: 'follow',
+          date: serverTimestamp(),
+          read: false,
+          additionalId: currentUserId,
+          senderId: currentUserId,
+          receiverId: userId,
+          postContent: "none",
+        });
+        setIsFollowing(true);
+      }
+    } catch (error) {
+      console.error('Error updating follow status:', error);
+    }
+  };
 
   const handleUserClick = (userId) => {
     setSelectedUserId(userId);
@@ -140,9 +208,14 @@ const UserProfileComponent = ({ userId }) => {
               </p>
             </div>
             <div className="flex items-center space-x-4">
-              <button className="px-4 py-2 bg-blue-500 text-white rounded-full font-medium transition-all duration-300 ease-in-out transform hover:scale-105 hover:bg-blue-600 focus:outline-none">
-                Follow
+            {currentUserId && currentUserId !== userId && (
+              <button
+                onClick={handleFollowToggle}
+                className="px-4 py-2 bg-blue-500 text-white rounded-full font-medium transition-all duration-300 ease-in-out transform hover:scale-105 hover:bg-blue-600 focus:outline-none"
+              >
+                {isFollowing ? 'Following' : 'Follow'}
               </button>
+            )}
               <div className="relative">
                 <img src={search} alt='Search' className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 filter-white'/>
                 <input
@@ -156,40 +229,7 @@ const UserProfileComponent = ({ userId }) => {
           <p className="mt-4 text-sm text-gray-400">
             {user ? user.bio : "User information not available."}
           </p>
-          <GlowingButtons />
-          <div className="h-[600px]">
-            {posts.length === 0 ? (
-              <div className="flex items-center justify-center min-h-screen bg-transparent">
-                <div className="relative w-16 h-16 animate-spin">
-                  <div className="absolute border-t-4 border-blue-500 border-solid rounded-full inset-0"></div>
-                  <div className="absolute border-t-4 border-transparent border-solid rounded-full inset-0 border-l-4 border-blue-500"></div>
-                </div>
-              </div>
-            ) : (
-              posts.map(post => (
-                <div
-                  key={post.id}
-                  className={`bg-gray-800 p-4 rounded-lg mb-3 shadow-md w-[600px] cursor-pointer transition-all duration-300 ease-in-out ${expandedPosts.includes(post.id) ? 'post-container-expanded' : 'post-container'}`}
-                  onClick={() => handlePostClick(post.id)}
-                >
-                  {post.user ? (
-                    <PostHeader
-                      userImage={user.profileImage}
-                      userName={user.name}
-                      postTime={formatTimeAgo(post.timestamp)}
-                    />
-                  ) : (
-                    <p className="text-gray-400">Loading...</p>
-                  )}
-                  <div
-                    className={`text-white transition-all duration-300 ease-in-out ${expandedPosts.includes(post.id) ? 'post-content expanded' : 'post-content'}`}
-                    dangerouslySetInnerHTML={{ __html: post.content }}
-                  ></div>
-                  <InteractionBar upvotes={post.upvotes || 0} comments={post.comments || 0} />
-                </div>
-              ))
-            )}
-          </div>
+          <MyOptionTabs id={userId}/>
         </div>
       </div>
       <div className="w-[30%] bg-gray-800 p-4 ml-4 rounded-lg bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">

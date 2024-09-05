@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import TabLayout from './TabLayout';
 import OptionTabs from './OptionTabs';
 import PostInput from './PostInput';
 import FollowUsersComponent from './FollowUsersComponent';

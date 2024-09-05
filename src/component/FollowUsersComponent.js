@@ -145,7 +145,7 @@ function FollowUsersComponent({ onUserClick }) {
                 </p>
               </div>
               <button
-                onClick={() => handleFollowToggle(user.id)}
+                onClick={(e) => {e.stopPropagation(); handleFollowToggle(user.id);}}
                 className="ml-auto text-sm px-2 py-1 bg-gradient-to-r from-purple-200 to-blue-300 text-gray-950 rounded-xl shadow-md hover:from-blue-300 hover:to-purple-200 transition-all duration-500 transform hover:scale-110 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-50 backdrop-filter backdrop-blur-md"
               >
                 {userFollowStatus[user.id] ? 'Following' : 'Follow'}

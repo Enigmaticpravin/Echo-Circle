@@ -6,18 +6,18 @@ import setting from '../images/setting.svg';
 import { useNavigate } from 'react-router-dom';
 import UserProfileComponent from './user-profile-component';
 import read from '../images/task.svg';
+import PostDetails from './PostObject';
 
 const NotificationsComponent = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastVisible, setLastVisible] = useState(null);
   const [hasMore, setHasMore] = useState(true);
-  const [currentView, setCurrentView] = useState('notifications'); // State to track the current view
-  const [selectedUserId, setSelectedUserId] = useState(null); // State to track the selected user ID
+  const [currentView, setCurrentView] = useState('notifications');
+  const [selectedUserId, setSelectedUserId] = useState(null);
   const navigate = useNavigate();
   const [users, setUsers] = useState({});
 
-  // Fetch users data to get profile pictures
   useEffect(() => {
     const fetchUsers = async () => {
       const usersRef = collection(db, 'users');
@@ -69,9 +69,10 @@ const NotificationsComponent = () => {
   const handleNotificationClick = (notification) => {
     if (notification.type === 'follow') {
       setSelectedUserId(notification.additionalId);
-      setCurrentView('profile'); // Switch to the profile view
+      setCurrentView('profile');
     } else if (notification.type === 'upvote') {
-      navigate(`/post/${notification.additionalId}`); // Redirect to the post details page
+      setSelectedUserId(notification.additionalId);
+      setCurrentView('post');
     }
   };
 
@@ -107,6 +108,9 @@ const NotificationsComponent = () => {
   // Conditionally render the profile or notifications list
   if (currentView === 'profile' && selectedUserId) {
     return <UserProfileComponent userId={selectedUserId} />;
+  } else if (currentView === 'post' && selectedUserId){
+    return <PostDetails postId={selectedUserId} />;
+   
   }
 
   return (

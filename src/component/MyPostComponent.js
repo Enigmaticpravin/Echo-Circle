@@ -10,7 +10,7 @@ import UpvotersDisplay from './UpvotersDisplay';
 import CommentSystem from '../component/comment-system';
 import UpvotePopup from '../component/UpvotePopup';
 
-function DefaultPostComponent() {
+function MyPostComponent({id}) {
   const [posts, setPosts] = useState([]);
   const [expandedPosts, setExpandedPosts] = useState([]);
   const [userCache, setUserCache] = useState({});
@@ -19,7 +19,7 @@ function DefaultPostComponent() {
   const [upvoteUsers, setUpvoteUsers] = useState([]);
 
   useEffect(() => {
-    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+    const q = query(collection(db, "posts"), where('user','==',id));
     
     const unsubscribe = onSnapshot(q, async (querySnapshot) => {
       const postsArray = querySnapshot.docs.map(doc => ({
@@ -92,6 +92,7 @@ function DefaultPostComponent() {
       }
     });
   };
+  
 
   const handleUpvoteNotification = async (postId, isUpvoted, postOwnerId, postContent) => {
     const currentUser = auth.currentUser;
@@ -143,7 +144,7 @@ function DefaultPostComponent() {
         const postData = postSnap.data();
         const upvotedUsers = postData.upvoted || [];
         const isUpvoted = upvotedUsers.includes(currentUser.uid);
-  
+
         try {
             // Update Firestore first
             if (isUpvoted) {
@@ -247,7 +248,7 @@ function DefaultPostComponent() {
               <span>{(upvotes?.length || 0)}</span>
             </button>
             <button className="flex items-center space-x-1 hover:text-red-500 transition-colors duration-200">
-              <img src={downvote} alt="Downvote" className="w-5 h-5 filter-white" />
+              <img src={downvote} alt="Views" className="w-5 h-5 filter-white" />
               <span>{(views?.length || 0)}</span>
             </button>
             <button className="flex items-center space-x-1 hover:text-green-500 transition-colors duration-200"
@@ -292,19 +293,19 @@ function DefaultPostComponent() {
   };
 
   return (
-    <div className="block p-4">
+    <div className="block">
        {posts.length === 0 ? (
-        <div className="flex items-center justify-center min-h-fit bg-transparent">
-          <div className="relative w-16 h-16 animate-spin mt-36">
-            <div className="absolute border-t-4 border-blue-500 border-solid rounded-full inset-0"></div>
-            <div className="absolute border-t-4 border-transparent border-solid rounded-full inset-0 border-l-4 border-blue-500"></div>
-          </div>
-        </div>
+              <div className="flex items-center justify-center min-h-fit bg-transparent">
+              <div className="relative w-16 h-16 animate-spin mt-36">
+                <div className="absolute border-t-4 border-blue-500 border-solid rounded-full inset-0"></div>
+                <div className="absolute border-t-4 border-transparent border-solid rounded-full inset-0 border-l-4 border-blue-500"></div>
+              </div>
+            </div>
         ) : (
           posts.map(post => (
             <div
               key={post.id}
-              className={`bg-gray-800 p-4 mt-5 rounded-lg mb-8 shadow-md w-[600px] cursor-pointer transition-all duration-300 ease-in-out ${
+              className={`bg-gray-800 p-4 mt-5 rounded-lg shadow-md w-[600px] cursor-pointer transition-all duration-300 ease-in-out ${
                 expandedPosts.includes(post.id) ? 'post-container-expanded' : 'post-container'
               }`}
               onClick={() => handlePostClick(post.id)}
@@ -348,4 +349,4 @@ function DefaultPostComponent() {
   );
 }
 
-export default DefaultPostComponent;
+export default MyPostComponent;

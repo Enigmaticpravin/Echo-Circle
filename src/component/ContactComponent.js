@@ -13,6 +13,7 @@ import GlowingButtons from './glowingbuttons';
 import search from '../images/search-normal.svg';
 import EditProfilePopup from './EditProfilePopup';
 import UserProfileComponent from './user-profile-component';
+import MyOptionTabs from './MyOptionTabs';
 
 
 const ProfileComponent = () => {
@@ -212,42 +213,7 @@ const ProfileComponent = () => {
           <p className="mt-4 text-sm text-gray-400">
             {user ? user.bio : 'This user has no bio'}
           </p>
-          <GlowingButtons />
-          <div className= "h-[600px]">
-            {posts.length === 0 ? (
-              <div className="flex items-center justify-center min-h-screen bg-transparent">
-                <div className="relative w-16 h-16 animate-spin">
-                  <div className="absolute border-t-4 border-blue-500 border-solid rounded-full inset-0"></div>
-                  <div className="absolute border-t-4 border-transparent border-solid rounded-full inset-0 border-l-4 border-blue-500"></div>
-                </div>
-              </div>
-            ) : (
-              posts.map(post => (
-                <div
-                  key={post.id}
-                  className={`bg-gray-800 p-4 rounded-lg mb-3 shadow-md w-[600px] cursor-pointer transition-all duration-300 ease-in-out ${expandedPosts.includes(post.id) ? 'post-container-expanded' : 'post-container'
-                    }`}
-                  onClick={() => handlePostClick(post.id)}
-                >
-                  {post.user ? (
-                    <PostHeader
-                      userImage={user.profileImage}
-                      userName={user.name}
-                      postTime={formatTimeAgo(post.timestamp)}
-                    />
-                  ) : (
-                    <p className="text-gray-400">Loading...</p>
-                  )}
-                  <div
-                    className={`text-white transition-all duration-300 ease-in-out ${expandedPosts.includes(post.id) ? 'post-content expanded' : 'post-content'
-                      }`}
-                    dangerouslySetInnerHTML={{ __html: post.content }}
-                  ></div>
-                  <InteractionBar upvotes={post.upvotes || 0} comments={post.comments || 0} postId={post.id} postUser={post.user}/>
-                </div>
-              ))
-            )}
-          </div>
+          <MyOptionTabs id={currentUser.uid}/>
         </div>
       </div>
       <div className="w-[30%] bg-gray-800 p-4 ml-4 rounded-lg bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">

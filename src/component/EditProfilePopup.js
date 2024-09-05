@@ -89,8 +89,7 @@ const EditProfilePopup = ({ onClose }) => {
             updatedProfileImage = await getDownloadURL(snapshot.ref);
   
             setIsUploading(false);
-  
-            // After the image upload completes, update the Firestore document
+            
             const updatedFields = {
               name: name || userData.name,
               username: username || userData.username,
