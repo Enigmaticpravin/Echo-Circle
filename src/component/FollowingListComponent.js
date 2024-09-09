@@ -15,7 +15,6 @@ function FollowingListComponent({userId, onUserClick }) {
 
     const fetchFollowing = async () => {
       try {
-        // Fetch current user's document
         const currentUserDocRef = doc(db, 'users', userId);
         const currentUserDocSnapshot = await getDoc(currentUserDocRef);
         const currentUserData = currentUserDocSnapshot.data();

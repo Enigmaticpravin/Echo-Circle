@@ -9,14 +9,17 @@ import more from '../images/more.svg';
 import UpvotersDisplay from './UpvotersDisplay';
 import CommentSystem from '../component/comment-system';
 import UpvotePopup from '../component/UpvotePopup';
+import AnswerContent from  '../component/AnswerContent';
 
-function DefaultPostComponent() {
+function DefaultPostComponent({ onalick }) {
   const [posts, setPosts] = useState([]);
   const [expandedPosts, setExpandedPosts] = useState([]);
   const [userCache, setUserCache] = useState({});
   const [openMenuPostId, setOpenMenuPostId] = useState(null);
   const [showUpvotePopup, setShowUpvotePopup] = useState(false);
   const [upvoteUsers, setUpvoteUsers] = useState([]);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const currentUserId = auth.currentUser ? auth.currentUser.uid : null;
 
   useEffect(() => {
     const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
@@ -48,6 +51,14 @@ function DefaultPostComponent() {
     if (userSnap.exists()) {
       const userData = userSnap.data();
       setUserCache(prevCache => ({ ...prevCache, [postUserId]: userData }));
+      if (currentUserId) {
+        const currentUserRef = doc(db, 'users', currentUserId);
+        const currentUserSnap = await getDoc(currentUserRef);
+        const currentUserData = currentUserSnap.data();
+        if (currentUserData && currentUserData.following.includes(postUserId)) {
+          setIsFollowing(true);
+        }
+      }
       return userData;
     } else {
       console.error('No such user!');
@@ -93,6 +104,65 @@ function DefaultPostComponent() {
     });
   };
 
+  const handleFollowToggle = async () => {
+    if (!currentUserId) {
+      console.error('No current user logged in');
+      return;
+    }
+
+    const userId = posts.user;
+
+    const userDocRef = doc(db, 'users', userId);
+    const currentUserDocRef = doc(db, 'users', currentUserId);
+    const notificationDocRef = collection(db, 'notifications', posts.user, 'userNotifications');
+
+    try {
+      if (isFollowing) {
+        // Unfollow
+        await updateDoc(userDocRef, {
+          followers: arrayRemove(currentUserId),
+        });
+        await updateDoc(currentUserDocRef, {
+          following: arrayRemove(userId),
+        });
+        const q = query(notificationDocRef,
+          where("senderId", "==", currentUserId),
+          where("receiverId", "==", userId),
+          where("additionalId", "==", currentUserId),
+          where("type", "==", "follow"));
+
+        const querySnapshot = await getDocs(q);
+
+        // Delete all matching notifications
+        querySnapshot.forEach(async (doc) => {
+          await deleteDoc(doc.ref);
+        });
+        setIsFollowing(false);
+      } else {
+        // Follow
+        await updateDoc(userDocRef, {
+          followers: arrayUnion(currentUserId),
+        });
+        await updateDoc(currentUserDocRef, {
+          following: arrayUnion(userId),
+        });
+        await addDoc(notificationDocRef, {
+          content: `${auth.currentUser.displayName} followed you`,
+          type: 'follow',
+          date: serverTimestamp(),
+          read: false,
+          additionalId: currentUserId,
+          senderId: currentUserId,
+          receiverId: userId,
+          postContent: "none",
+        });
+        setIsFollowing(true);
+      }
+    } catch (error) {
+      console.error('Error updating follow status:', error);
+    }
+  };
+
   const handleUpvoteNotification = async (postId, isUpvoted, postOwnerId, postContent) => {
     const currentUser = auth.currentUser;
     if (!currentUser) return;
@@ -128,6 +198,15 @@ function DefaultPostComponent() {
       });
     }
   };
+
+  function GhazalContent({ content }) {
+    return (
+      <div className="ghazal-container"
+     dangerouslySetInnerHTML={{ __html: content }}>
+      </div>
+    );
+  }
+  
 
   const handleUpvote = async (postId) => {
     const currentUser = auth.currentUser;
@@ -319,12 +398,24 @@ function DefaultPostComponent() {
               ) : (
                 <p className="text-gray-400">Loading...</p>
               )}
-              <div
-                className={`text-white transition-all duration-300 ease-in-out ${
-                  expandedPosts.includes(post.id) ? 'post-content expanded' : 'post-content'
-                }`}
-                dangerouslySetInnerHTML={{ __html: post.content }}
-              ></div>
+              {post.type === "Ghazal" ? (
+                <GhazalContent content={post.content} />
+              ) : post.type === "answer" ? (
+                <div className="answer-content">
+                  <AnswerContent questionid={post.questionid} answerContent={post.content} onalick={onalick}/>
+                  <div
+                  className={`text-white transition-all duration-300 ease-in-out ${expandedPosts.includes(post.id) ? 'post-content expanded' : 'post-content'
+                    }`}
+                  dangerouslySetInnerHTML={{ __html: post.content }}
+                ></div>
+                </div>
+              ) : (
+                <div
+                  className={`text-white transition-all duration-300 ease-in-out ${expandedPosts.includes(post.id) ? 'post-content expanded' : 'post-content'
+                    }`}
+                  dangerouslySetInnerHTML={{ __html: post.content }}
+                ></div>
+              )}
           {expandedPosts.includes(post.id) && (
                   <div className="flex items-center justify-between w-full mt-4">
                <UpvotersDisplay upvoters={post.upvoted || []} />

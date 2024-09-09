@@ -16,7 +16,7 @@ import UserProfileComponent from './user-profile-component';
 import MyOptionTabs from './MyOptionTabs';
 
 
-const ProfileComponent = () => {
+const ProfileComponent = ({ togglePopup }) => {
   const [user, setUser] = useState(null);
   const [expandedPosts, setExpandedPosts] = useState([]);
   const [posts, setPosts] = useState([]);
@@ -213,7 +213,7 @@ const ProfileComponent = () => {
           <p className="mt-4 text-sm text-gray-400">
             {user ? user.bio : 'This user has no bio'}
           </p>
-          <MyOptionTabs id={currentUser.uid}/>
+          <MyOptionTabs id={currentUser.uid} togglePopup={togglePopup}/>
         </div>
       </div>
       <div className="w-[30%] bg-gray-800 p-4 ml-4 rounded-lg bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">

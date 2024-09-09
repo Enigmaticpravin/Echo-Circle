@@ -9,6 +9,7 @@ import CallsComponent from './CallsComponent';
 import ContactComponent from './ContactComponent';
 import PrivacyComponent from './PrivacyComponent';
 import home from '../images/home-1.svg';
+import { useLocation } from 'react-router-dom';
 import messages from "../images/messages-1.svg";
 import video from '../images/video.svg';
 import NotificationsComponent from './NotificationsComponent';
@@ -17,6 +18,7 @@ import shield from '../images/shield.svg';
 import setting from '../images/setting.svg';
 import SettingComponent from './SettingComponent';
 import QuoraPostPopup from './QuoraPostPopup';
+import AnswerPopup from './AnswerPopup';
 import search from '../images/search-normal.svg';
 import add from '../images/additem.svg';
 import notification from '../images/notification-1.svg';
@@ -28,7 +30,18 @@ function Dashboard() {
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [message, setMessage] = useState('');
   const [showQuoraPopup, setShowQuoraPopup] = useState(false);
+  const [showAnswerPopup, setShowAnswerPopup] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const tab = queryParams.get('activeTab');
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [location.search]);
+
 
   const fetchAllUsers = async () => {
     try {
@@ -80,6 +93,11 @@ function Dashboard() {
   
     return () => unsubscribe();
   }, [navigate]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    navigate(`/dashboard?activeTab=${tab}`);
+  };
   
 
   const handleSendMessage = async () => {
@@ -98,6 +116,10 @@ function Dashboard() {
     setShowQuoraPopup(!showQuoraPopup);
   };
 
+  const toggleAnswerPopup = () => {
+    setShowAnswerPopup(!showAnswerPopup);
+  }
+
   if (!user) return (
     <div className="flex items-center justify-center min-h-screen bg-gray-900">
       <div className="relative w-16 h-16 animate-spin">
@@ -111,6 +133,7 @@ function Dashboard() {
     <div className="flex h-screen bg-gradient-to-r from-gray-900 via-black to-gray-900 text-white">
        {/* Popup Modal */}
        {showQuoraPopup && <QuoraPostPopup onClose={toggleQuoraPopup} />}
+       {showAnswerPopup && <AnswerPopup onClose={toggleAnswerPopup} />}
       {/* Sidebar */}
       <div className="w-64 bg-gray-800 p-4 flex flex-col justify-between mt-4 ml-4 mb-4 rounded-lg bg-opacity-50 backdrop-blur-lg shadow-2xl border border-gray-700 border-opacity-50">
         <div>
@@ -120,31 +143,31 @@ function Dashboard() {
             <ul className="space-y-4 p-2">
               <li
                 className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Explore' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
-                onClick={() => setActiveTab('Explore')}
+                onClick={() => handleTabChange('Explore')}
               >
                 <img src={home} className="text-xl mr-2 filter-white" /> Explore
               </li>
               <li
                 className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Chats' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
-                onClick={() => setActiveTab('Chats')}
+                onClick={() => handleTabChange('Chats')}
               >
                 <img src={messages} className="text-xl mr-2 filter-white" /> Chats
               </li>
               <li
                 className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Calls' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
-                onClick={() => setActiveTab('Calls')}
+                onClick={() => handleTabChange('Calls')}
               >
                 <img src={video} className="text-xl mr-2 filter-white" /> Calls
               </li>
               <li
                 className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Contact' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
-                onClick={() => setActiveTab('Contact')}
+                onClick={() => handleTabChange('Contact')}
               >
                 <img src={money} className="text-xl mr-2 filter-white" /> Monetization
               </li>
               <li
                 className={`flex items-center p-2 rounded-lg transition-all duration-300 cursor-pointer ${activeTab === 'Privacy' ? 'bg-gray-900' : 'hover:bg-gray-900 hover:p-4'}`}
-                onClick={() => setActiveTab('Privacy')}
+                onClick={() => handleTabChange('Privacy')}
               >
                 <img src={shield} className="text-xl mr-2 filter-white" /> Privacy
               </li>
@@ -251,7 +274,7 @@ function Dashboard() {
       </div>
     )}
     {activeTab === 'Calls' && <CallsComponent />}
-    {activeTab === 'Contact' && <ContactComponent />}
+    {activeTab === 'Contact' && <ContactComponent togglePopup={toggleAnswerPopup}/>}
     {activeTab === 'Privacy' && <PrivacyComponent />}
     {activeTab === 'Setting' && <SettingComponent />}
     {activeTab === 'Notifications' && <NotificationsComponent />}

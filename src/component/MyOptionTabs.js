@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import MyPostComponent from './MyPostComponent';
+import QuestionsList from './QuestionsList';
 
-const MyOptionTabs = ({id}) => {
+const MyOptionTabs = ({id, togglePopup}) => {
   const [activeTab, setActiveTab] = useState('recent');
 
   const handleTabClick = (tab) => {
@@ -17,7 +18,7 @@ const MyOptionTabs = ({id}) => {
           onClick={() => handleTabClick('recent')}
         />
         <Tab
-          label="Following"
+          label="Questions"
           isActive={activeTab === 'following'}
           onClick={() => handleTabClick('following')}
         />
@@ -28,9 +29,8 @@ const MyOptionTabs = ({id}) => {
         />
       </div>
      <div className="rounded-xl">
-        {/* Display content based on the selected tab */}
         {activeTab === 'recent' && <MyPostComponent id={id}/>}
-        {activeTab === 'following' && <p>Showing Following content...</p>}
+        {activeTab === 'following' && <QuestionsList authorId={id} togglePopup={togglePopup}/>}
         {activeTab === 'popular' && <p>Showing Popular content...</p>}
       </div>
     </div>

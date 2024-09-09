@@ -6,7 +6,9 @@ import setting from '../images/setting.svg';
 import { useNavigate } from 'react-router-dom';
 import UserProfileComponent from './user-profile-component';
 import read from '../images/task.svg';
+import QuestionDetails from '../component/QuestionDetails';
 import PostDetails from './PostObject';
+import FullAnswer from './FullAnswer';
 
 const NotificationsComponent = () => {
   const [notifications, setNotifications] = useState([]);
@@ -15,6 +17,7 @@ const NotificationsComponent = () => {
   const [hasMore, setHasMore] = useState(true);
   const [currentView, setCurrentView] = useState('notifications');
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [selectedQuestion, setSelectedQuestion] = useState(null);
   const navigate = useNavigate();
   const [users, setUsers] = useState({});
 
@@ -73,6 +76,13 @@ const NotificationsComponent = () => {
     } else if (notification.type === 'upvote') {
       setSelectedUserId(notification.additionalId);
       setCurrentView('post');
+    } else if (notification.type === 'answer'){
+      setSelectedUserId(notification.additionalId);
+      setSelectedQuestion(notification.questionId);
+      setCurrentView('answer');
+    } else if (notification.type === 'question'){
+      setSelectedQuestion(notification.questionId);
+      setCurrentView('question');
     }
   };
 
@@ -110,8 +120,12 @@ const NotificationsComponent = () => {
     return <UserProfileComponent userId={selectedUserId} />;
   } else if (currentView === 'post' && selectedUserId){
     return <PostDetails postId={selectedUserId} />;
-   
+  } else if (currentView === 'answer' && selectedUserId){
+    return <FullAnswer postId={selectedUserId} questionid={selectedQuestion}/>
+  } else if (currentView === 'question' && selectedQuestion){
+  return <QuestionDetails questionid={selectedQuestion}/>
   }
+
 
   return (
     <div className="flex flex-col p-4 mx-auto max-w-4xl w-full">

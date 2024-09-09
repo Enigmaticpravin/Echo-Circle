@@ -3,7 +3,7 @@ import DefaultPostComponent from './DefaultPostComponent';
 import FollowingPostComponent from './FollowingPostComponent';
 import PopularPostComponent from './PopularPostComponent';
 
-const OptionTabs = () => {
+const OptionTabs = ( {onclick} ) => {
   const [activeTab, setActiveTab] = useState('recent');
 
   const handleTabClick = (tab) => {
@@ -31,7 +31,7 @@ const OptionTabs = () => {
       </div>
      <div className="rounded-xl">
         {/* Display content based on the selected tab */}
-        {activeTab === 'recent' && <DefaultPostComponent/>}
+        {activeTab === 'recent' && <DefaultPostComponent onalick={onclick}/>}
         {activeTab === 'following' && <FollowingPostComponent/>}
         {activeTab === 'popular' && <PopularPostComponent/>}
       </div>

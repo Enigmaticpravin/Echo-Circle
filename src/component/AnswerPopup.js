@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, ChevronDown, Globe } from 'lucide-react';
-import { auth, db, doc, getDoc, collection, addDoc } from '../firebase';
+import { auth, db, doc, getDoc, collection, addDoc, serverTimestamp } from '../firebase';
 import bold from '../images/bold.svg';
 import italic from '../images/italic.svg';
+import { toast } from 'react-toastify';
 import underline from '../images/underline.svg';
 import link from '../images/link.svg';
 import bull from '../images/bulletlist.svg'
 import quotel from '../images/quote.png';
 import separate from '../images/separate.svg';
 
-const QuoraPostPopup = ({ onClose }) => {
+const AnswerPopup = ({ onClose, question, questionid, author }) => {
   const [user, setUser] = useState(null);
   const [isEmpty, setIsEmpty] = useState(true);
   const contentEditableRef = useRef(null);
@@ -17,6 +18,8 @@ const QuoraPostPopup = ({ onClose }) => {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [linkInput, setLinkInput] = useState('');
+  const ques = questionid;
+  const aut = author;
 
   const handleLinkClick = () => {
     setShowLinkDiv(true);
@@ -218,7 +221,26 @@ const QuoraPostPopup = ({ onClose }) => {
   };
 
 
-  const handlePost = async () => {
+  const handleUpvoteNotification = async (questioni, postid) => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return;
+  
+    const notificationsRef = collection(db, 'notifications', aut, 'userNotifications');
+  
+    await addDoc(notificationsRef, {
+      content: `${currentUser.displayName} answered your question`,
+      type: 'answer',
+      date: serverTimestamp(),
+      read: false,
+      additionalId: postid,
+      questionId: questioni,
+      senderId: currentUser.uid,
+      receiverId: aut,
+      postContent: '',
+    });
+  };
+
+  const handlePost = async (questioni) => {
     // Get content with line breaks preserved as <br> tags
     let content = contentEditableRef.current.innerHTML;
     
@@ -226,9 +248,8 @@ const QuoraPostPopup = ({ onClose }) => {
     // This ensures that line breaks are preserved
     content = content.replace(/\n/g, '<br>');
 
-    console.log('Post Content:', content);
-  
-    setUploading(true); // Start uploading
+    console.log('Post Content:', ques);
+    setUploading(true);
 
     // Simulate upload progress (e.g., by using a timeout)
     let progressValue = 0;
@@ -244,20 +265,25 @@ const QuoraPostPopup = ({ onClose }) => {
     
     // Assuming you have a Firestore collection for posts
     try {
-      await addDoc(collection(db, "posts"), {
+      const docRef = await addDoc(collection(db, "posts"), {
         content,
         timestamp: new Date(),
         user: user.userId,
-        type: "post"
+        type: "answer",
+        questionid: questioni
       });
+  
+      // Retrieve the document ID
+      const postId = docRef.id;
+  
+      // Pass the document ID to handle notifications
+      handleUpvoteNotification(questioni, postId);
       console.log('Post saved successfully');
       onClose();
     } catch (error) {
       console.error('Error saving post:', error);
     }
 };
-
-  
 
   const applyCodeFormat = () => {
     const selection = window.getSelection();
@@ -356,18 +382,18 @@ const QuoraPostPopup = ({ onClose }) => {
               </button>
             </div>
           </div>
-
+          <h1 className="text-lg font-poppins font-bold" dangerouslySetInnerHTML={{ __html: question }}></h1>
           <div className="relative w-full h-full">
             {isEmpty && (
-              <div className="absolute inset-0 text-gray-500 p-2 pointer-events-none">
-                Say something...
+              <div className="absolute inset-0 text-gray-500 py-2 pointer-events-none">
+                Write your answer here...
               </div>
             )}
             <div
               ref={contentEditableRef}
               contentEditable
               onInput={handleInput}
-              className="w-full h-full bg-transparent text-white resize-none focus:outline-none p-2 relative z-10"
+              className="w-full h-full bg-transparent text-white resize-none focus:outline-none py-2 relative z-10"
               style={{ whiteSpace: 'pre-wrap' }}
             ></div>
           </div>
@@ -468,7 +494,7 @@ const QuoraPostPopup = ({ onClose }) => {
             </div>
             <button
               className="bg-blue-500 text-white px-4 py-1 rounded-full font-semibold hover:bg-blue-600 mr-4"
-              onClick={handlePost}
+              onClick={() => handlePost(ques)}
               disabled={uploading}
             >
               Post
@@ -498,4 +524,4 @@ const QuoraPostPopup = ({ onClose }) => {
     </div>
   );
 }
-export default QuoraPostPopup;
+export default AnswerPopup;

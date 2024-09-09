@@ -94,6 +94,41 @@
   }
 }
 
+.justified-poem {
+  font-family: serif; /* Optional for ghazal-like typography */
+  text-align: justify; /* Justify the text */
+  white-space: pre-wrap; /* Preserve spaces and line breaks */
+  line-height: 1; /* Adjust line height as needed */
+}
+
+.ghazal-container {
+  font-size: 1.1rem; /* You can adjust the size */
+  white-space: pre-wrap; /* Preserves newlines and wraps text */
+  word-wrap: break-word; /* Breaks long words if needed */
+  max-width: 100%; /* Make sure it resizes according to the container width */
+  margin: 0 auto;
+  padding-left: 100px;
+  padding-right: 100px;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  line-height: 0.8;
+  overflow: auto; /* Handles content overflow when resized */
+  background-color: #f9f9f900; /* Optional background */
+  border-radius: 8px; /* Rounded corners */
+}
+
+
+.line {
+  display: flex;
+  justify-content: space-between; /* Distribute space between words */
+  margin-bottom: 5px; /* Optional spacing between lines */
+}
+
+.word {
+  margin-right: 0;
+}
+
+
 .fade-enter {
   opacity: 0;
 }
