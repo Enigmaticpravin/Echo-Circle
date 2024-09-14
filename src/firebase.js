@@ -24,14 +24,15 @@ import {
 import { getStorage, ref, uploadBytes, getDownloadURL, uploadString, uploadBytesResumable } from "firebase/storage"; 
 
 const firebaseConfig = {
-    apiKey: "AIzaSyBRYu-6GLpgq-sTybxZzdh27U7dyovPj1g",
-    authDomain: "meetandgreet-a5ee4.firebaseapp.com",
-    projectId: "meetandgreet-a5ee4",
-    storageBucket: "meetandgreet-a5ee4.appspot.com",
-    messagingSenderId: "948447767770",
-    appId: "1:948447767770:web:c647a38b287f92ab9509e3",
-    measurementId: "G-9G8FFXZZ1L"
-};
+    apiKey: "AIzaSyCmQNbaN2onoUqyejxwjpg6VeQ5H2NK3DM",
+    authDomain: "wale-app-52d30.firebaseapp.com",
+    databaseURL: "https://wale-app-52d30-default-rtdb.firebaseio.com",
+    projectId: "wale-app-52d30",
+    storageBucket: "wale-app-52d30.appspot.com",
+    messagingSenderId: "770769688585",
+    appId: "1:770769688585:web:b6d943cefcde6d76cbc0d8",
+    measurementId: "G-YYHGBRDMK1"
+  };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);

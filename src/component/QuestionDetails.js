@@ -1,7 +1,7 @@
 import React from 'react';
 import { MoreHorizontal, MessageCircle, ThumbsDown } from 'lucide-react';
 import follow from '../images/radar-1.svg';
-import { getDoc, auth, db, doc } from '../firebase';
+import { getDoc, auth, db, doc, updateDoc, arrayRemove, arrayUnion } from '../firebase';
 import { useEffect, useState } from 'react';
 import RelatedPosts from './RelatedPosts';
 import AnswerPopup from './AnswerPopup';
@@ -13,10 +13,15 @@ const QuestionDetails = (questionid) => {
   const [showQuoraPopup, setShowQuoraPopup] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [authorid, setAuthor] = useState(null);
+  const [followers, setFollowers] = useState([]); // Store the followers
+  const [isFollowing, setIsFollowing] = useState(false); // Track if the current user is following
+  const [user, setUser] = useState(null); // Store the current user
   const [questions, setQuestions] = useState([]);
 
   const data = questionid.questionid;
   useEffect(() => {
+    const currentUser = auth.currentUser;
+    setUser(currentUser);
     if (data) {
       const fetchQuestionContent = async () => {
         try {
@@ -26,6 +31,15 @@ const QuestionDetails = (questionid) => {
           if (questionSnapshot.exists()) {
             setQuestions(questionSnapshot.data().user);
             setQuestionContent(questionSnapshot.data().content);
+            setFollowers(questionSnapshot.data().followers || []); // Get followers from the question doc
+
+            // Check if the user is already following the question
+            if (currentUser && questionSnapshot.data().followers?.includes(currentUser.uid)) {
+              setIsFollowing(true); // Set follow state based on Firestore data
+              
+            } else {
+              setIsFollowing(false); // Not following
+            }
           } else {
             console.error('No such question!');
           }
@@ -39,6 +53,36 @@ const QuestionDetails = (questionid) => {
       fetchQuestionContent();
     }
   }, [data]);
+
+  const toggleFollow = async () => {
+    if (!user) {
+      console.log('User not logged in');
+      return;
+    }
+
+    try {
+      const questionDocRef = doc(db, 'questions', data);
+
+      if (isFollowing) {
+        // Unfollow the question
+        await updateDoc(questionDocRef, {
+          followers: arrayRemove(user.uid),
+        });
+        setFollowers((prev) => prev.filter((uid) => uid !== user.uid));
+        setIsFollowing(false);
+      } else {
+        // Follow the question
+        await updateDoc(questionDocRef, {
+          followers: arrayUnion(user.uid),
+        });
+        setFollowers((prev) => [...prev, user.uid]);
+        setIsFollowing(true);
+      }
+    } catch (error) {
+      console.error('Error following/unfollowing question:', error);
+    }
+  };
+
 
   const toggleQuoraPopup = (question, id, author) => {
     if (question) {
@@ -66,10 +110,13 @@ const QuestionDetails = (questionid) => {
             >
               Answer
             </button>
-          <button className=" text-white px-4 py-2 rounded-full text-sm flex items-center border border-gray-700 transition-colors duration-300 ease-in-out">
-            <img src={follow} className='w-5 h-5 filter-white mr-2'></img>
-            <span className="mr-1">Follow</span>
-          </button>
+            <button
+              className={`text-white px-4 py-2 rounded-full text-sm flex items-center border ${isFollowing ? 'border-green-500' : 'border-gray-700'}`}
+              onClick={toggleFollow}
+            >
+              <img src={follow} className='w-5 h-5 filter-white mr-2'></img>
+              <span>{isFollowing ? 'Unfollow' : 'Follow'}</span>
+            </button>
         </div>
       </div>
       

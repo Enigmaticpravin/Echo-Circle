@@ -10,6 +10,7 @@ import UpvotersDisplay from './UpvotersDisplay';
 import CommentSystem from '../component/comment-system';
 import UpvotePopup from '../component/UpvotePopup';
 import AnswerContent from  '../component/AnswerContent';
+import { faL } from '@fortawesome/free-solid-svg-icons';
 
 function DefaultPostComponent({ onalick }) {
   const [posts, setPosts] = useState([]);
@@ -55,9 +56,16 @@ function DefaultPostComponent({ onalick }) {
         const currentUserRef = doc(db, 'users', currentUserId);
         const currentUserSnap = await getDoc(currentUserRef);
         const currentUserData = currentUserSnap.data();
-        if (currentUserData && currentUserData.following.includes(postUserId)) {
-          setIsFollowing(true);
-        }
+        if (currentUserData && currentUserData.following) {
+          if (currentUserData.following.includes(postUserId)) {
+              setIsFollowing(true);
+          } else {
+              setIsFollowing(false);
+          }
+      } else {
+          setIsFollowing(false); // Default value if following is not available
+      }
+      
       }
       return userData;
     } else {
