@@ -28,18 +28,8 @@ function CallsComponent() {
   const setupLocalStream = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          frameRate: { ideal: 30, max: 60 },
-        },
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 48000,
-          sampleSize: 16,
-        }
+        video: true,
+        audio: true
       });
       setLocalStream(stream);
       if (localVideoRef.current) {
@@ -53,45 +43,59 @@ function CallsComponent() {
   };
 
   const createRoom = async () => {
-    const roomRef = await addDoc(collection(db, 'rooms'), { participants: [] });
-    setRoomId(roomRef.id);
-    setRoomStarted(true);
-    setIsCreator(true);
-    await joinRoom(roomRef.id);
+    try {
+      const roomRef = await addDoc(collection(db, 'rooms'), { participants: [auth.currentUser.uid] });
+      setRoomId(roomRef.id);
+      setRoomStarted(true);
+      setIsCreator(true);
+      await joinRoom(roomRef.id);
+    } catch (error) {
+      console.error("Error creating room:", error);
+    }
   };
 
   const joinRoom = async (id) => {
-    setRoomId(id);
-    const roomRef = doc(db, 'rooms', id);
-    const roomSnapshot = await getDoc(roomRef);
+    try {
+      setRoomId(id);
+      const roomRef = doc(db, 'rooms', id);
+      const roomSnapshot = await getDoc(roomRef);
 
-    if (roomSnapshot.exists()) {
-      const room = roomSnapshot.data();
-      if (room.participants) {
-        for (const participantId of room.participants) {
-          if (participantId !== auth.currentUser.uid) {
-            await createPeerConnection(participantId, true, id);
+      if (roomSnapshot.exists()) {
+        const room = roomSnapshot.data();
+        if (room.participants) {
+          for (const participantId of room.participants) {
+            if (participantId !== auth.currentUser.uid) {
+              await createPeerConnection(participantId, true, id);
+            }
           }
         }
-      }
-      await updateDoc(roomRef, {
-        participants: arrayUnion(auth.currentUser.uid)
-      });
-    }
-
-    onSnapshot(roomRef, (snapshot) => {
-      const data = snapshot.data();
-      if (data && data.participants) {
-        data.participants.forEach(async (participantId) => {
-          if (
-            participantId !== auth.currentUser.uid &&
-            !peerConnections.current[participantId]
-          ) {
-            await createPeerConnection(participantId, false, id);
-          }
+        await updateDoc(roomRef, {
+          participants: arrayUnion(auth.currentUser.uid)
         });
+      } else {
+        console.error("Room does not exist");
+        return;
       }
-    });
+
+      // Listen for new participants
+      onSnapshot(roomRef, (snapshot) => {
+        const data = snapshot.data();
+        if (data && data.participants) {
+          data.participants.forEach(async (participantId) => {
+            if (
+              participantId !== auth.currentUser.uid &&
+              !peerConnections.current[participantId]
+            ) {
+              await createPeerConnection(participantId, false, id);
+            }
+          });
+        }
+      });
+
+      setRoomStarted(true);
+    } catch (error) {
+      console.error("Error joining room:", error);
+    }
   };
 
   const createPeerConnection = async (participantId, isInitiator, roomId) => {
@@ -100,11 +104,7 @@ function CallsComponent() {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' },
-          { urls: 'stun:stun4.l.google.com:19302' },
-        ],
-        iceCandidatePoolSize: 10,
+        ]
       });
 
       pc.onicecandidate = (event) => {
@@ -127,10 +127,7 @@ function CallsComponent() {
       localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
       if (isInitiator) {
-        const offer = await pc.createOffer({
-          offerToReceiveAudio: true,
-          offerToReceiveVideo: true,
-        });
+        const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
         await addDoc(collection(db, 'rooms', roomId, 'offers'), {
           offer: { type: offer.type, sdp: offer.sdp },
@@ -141,6 +138,7 @@ function CallsComponent() {
 
       peerConnections.current[participantId] = pc;
 
+      // Listen for offers
       onSnapshot(
         query(collection(db, 'rooms', roomId, 'offers'), where('recipientId', '==', auth.currentUser.uid)),
         async (snapshot) => {
@@ -163,6 +161,7 @@ function CallsComponent() {
         }
       );
 
+      // Listen for answers
       onSnapshot(
         query(collection(db, 'rooms', roomId, 'answers'), where('recipientId', '==', auth.currentUser.uid)),
         (snapshot) => {
@@ -178,6 +177,7 @@ function CallsComponent() {
         }
       );
 
+      // Listen for ICE candidates
       onSnapshot(
         query(collection(db, 'rooms', roomId, 'candidates'), where('recipientId', '==', auth.currentUser.uid)),
         (snapshot) => {
@@ -214,7 +214,6 @@ function CallsComponent() {
   const handleJoinRoom = async () => {
     if (roomId) {
       await joinRoom(roomId);
-      setRoomStarted(true);
     }
   };
 
